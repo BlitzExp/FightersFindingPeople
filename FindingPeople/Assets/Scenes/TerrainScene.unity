@@ -280,7 +280,24 @@ MonoBehaviour:
   terrainLayers:
   - {fileID: 8574412962073106934, guid: a5287fbeb2986ff44a94b0f50d1c158a, type: 2}
   - {fileID: 8574412962073106934, guid: a5287fbeb2986ff44a94b0f50d1c158a, type: 2}
-  terrainPosition: {x: 100, y: 0, z: 100}
+  terrainPosition: {x: 0, y: 0, z: 0}
+  spawnableObjects:
+  - name: Rock1
+    prefab: {fileID: 5169782269429123390, guid: bc5caabe01d5cfef8af0f002634a877d, type: 3}
+    count: 30
+    minDistance: 25
+  - name: Rock2
+    prefab: {fileID: 273134392781923372, guid: 6c16b2d8db5cd4a45bcc5962369d8b72, type: 3}
+    count: 30
+    minDistance: 25
+  - name: Rock3
+    prefab: {fileID: 4837504807442622325, guid: 2fe3ebebdb1b797a0a315f8eaa5ffaa2, type: 3}
+    count: 30
+    minDistance: 25
+  - name: Rock4
+    prefab: {fileID: 7255744995304902151, guid: 548307025636ee727b432eb02ff57d4d, type: 3}
+    count: 30
+    minDistance: 25
 --- !u!154 &1705149159
 TerrainCollider:
   m_ObjectHideFlags: 0
