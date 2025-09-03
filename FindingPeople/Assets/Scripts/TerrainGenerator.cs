@@ -6,7 +6,7 @@ public class TerrainGenerator : MonoBehaviour
     [Header("Terrain Settings")]
     public int terrainWidth = 20;
     public int terrainHeight = 20;
-    public int terrainDepth = 5;
+    public float terrainDepth = 5;
 
     [Header("Noise Settings")]
     public float scale = 20f;
@@ -16,10 +16,15 @@ public class TerrainGenerator : MonoBehaviour
     [Header("Textures")]
     public TerrainLayer[] terrainLayers;
 
+    [Header("Terrain Position")]
+    public Vector3 terrainPosition = Vector3.zero;
+
     private Terrain terrain;
 
     void Start()
 {
+    transform.position = terrainPosition;
+    
     terrain = GetComponent<Terrain>();
 
     TerrainData newTerrainData = new TerrainData();
