@@ -22,30 +22,34 @@ public class TerrainGenerator : MonoBehaviour
     private Terrain terrain;
 
     void Start()
-{
-    transform.position = terrainPosition;
-    
-    terrain = GetComponent<Terrain>();
+    {
+        transform.position = terrainPosition;
 
-    TerrainData newTerrainData = new TerrainData();
-    newTerrainData = GenerateTerrain(newTerrainData);
+        terrain = GetComponent<Terrain>();
 
-    terrain.terrainData = newTerrainData;
+        TerrainData newTerrainData = new TerrainData();
+        newTerrainData = GenerateTerrain(newTerrainData);
 
-    ApplyTextures(newTerrainData);
-}
+        terrain.terrainData = newTerrainData;
+
+        ApplyTextures(newTerrainData);
+    }
 
     TerrainData GenerateTerrain(TerrainData terrainData)
     {
-        terrainData.heightmapResolution = terrainWidth + 1;
+        int resolution = GetClosestValidResolution(Mathf.Max(terrainWidth, terrainHeight));
+        terrainData.heightmapResolution = resolution;
+
         terrainData.size = new Vector3(terrainWidth, terrainDepth, terrainHeight);
-        terrainData.SetHeights(0, 0, GenerateHeights());
+        terrainData.SetHeights(0, 0, GenerateHeights(resolution));
+
         return terrainData;
     }
 
-    float[,] GenerateHeights()
+
+    float[,] GenerateHeights(int resolution)
     {
-        float[,] heights = new float[terrainWidth, terrainHeight];
+        float[,] heights = new float[resolution, resolution];
 
         System.Random prng = new System.Random(seed);
         Vector2 seedOffset = new Vector2(prng.Next(-100000, 100000), prng.Next(-100000, 100000));
@@ -55,18 +59,21 @@ public class TerrainGenerator : MonoBehaviour
         float persistence = 0.5f;
         float lacunarity = 2.0f;
 
-        for (int x = 0; x < terrainWidth; x++)
+        for (int x = 0; x < resolution; x++)
         {
-            for (int y = 0; y < terrainHeight; y++)
+            for (int y = 0; y < resolution; y++)
             {
                 float amplitude = 1f;
                 float frequency = 1f;
                 float noiseHeight = 0f;
 
+                float percentX = (float)x / (resolution - 1);
+                float percentY = (float)y / (resolution - 1);
+
                 for (int i = 0; i < octaves; i++)
                 {
-                    float xCoord = ((float)x / terrainWidth * scale * frequency) + totalOffset.x;
-                    float yCoord = ((float)y / terrainHeight * scale * frequency) + totalOffset.y;
+                    float xCoord = (percentX * scale * frequency) + totalOffset.x;
+                    float yCoord = (percentY * scale * frequency) + totalOffset.y;
 
                     float perlinValue = Mathf.PerlinNoise(xCoord, yCoord);
                     noiseHeight += perlinValue * amplitude;
@@ -81,6 +88,7 @@ public class TerrainGenerator : MonoBehaviour
 
         return heights;
     }
+
 
     void ApplyTextures(TerrainData terrainData)
     {
@@ -130,5 +138,20 @@ public class TerrainGenerator : MonoBehaviour
         }
 
         terrainData.SetAlphamaps(0, 0, alphamaps);
+    }
+
+    int GetClosestValidResolution(int terrainSize)
+    {
+        int[] validResolutions = { 33, 65, 129, 257, 513, 1025, 2049, 4097 };
+
+        for (int i = 0; i < validResolutions.Length; i++)
+        {
+            if (validResolutions[i] >= terrainSize + 1)
+            {
+                return validResolutions[i];
+            }
+        }
+
+        return 4097;
     }
 }

@@ -271,15 +271,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dcce7fd3d054836da8d007e60ae6cc00, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  terrainWidth: 33
-  terrainHeight: 33
+  terrainWidth: 50
+  terrainHeight: 50
   terrainDepth: 5
   scale: 5
-  seed: 40
+  seed: 150
   offset: {x: 0, y: 0}
   terrainLayers:
   - {fileID: 8574412962073106934, guid: a5287fbeb2986ff44a94b0f50d1c158a, type: 2}
   - {fileID: 8574412962073106934, guid: a5287fbeb2986ff44a94b0f50d1c158a, type: 2}
+  terrainPosition: {x: 100, y: 0, z: 100}
 --- !u!154 &1705149159
 TerrainCollider:
   m_ObjectHideFlags: 0
@@ -349,7 +350,7 @@ Transform:
   m_GameObject: {fileID: 1705149157}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 45.71}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
