@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(Terrain))]
 public class TerrainGenerator : MonoBehaviour
@@ -19,6 +20,9 @@ public class TerrainGenerator : MonoBehaviour
     [Header("Terrain Position")]
     public Vector3 terrainPosition = Vector3.zero;
 
+    [Header("Spawnable Objects")]
+    public SpawnableObject[] spawnableObjects;
+
     private Terrain terrain;
 
     void Start()
@@ -33,6 +37,8 @@ public class TerrainGenerator : MonoBehaviour
         terrain.terrainData = newTerrainData;
 
         ApplyTextures(newTerrainData);
+
+        SpawnObjects(newTerrainData);
     }
 
     TerrainData GenerateTerrain(TerrainData terrainData)
@@ -154,4 +160,54 @@ public class TerrainGenerator : MonoBehaviour
 
         return 4097;
     }
+
+    void SpawnObjects(TerrainData terrainData)
+    {
+        // Si se quiere que la distancia mínima sea inclusiva a todos los prefabs
+        // List<Vector3> placedPositions = new List<Vector3>();
+
+        foreach (var obj in spawnableObjects)
+        {
+            if (obj.prefab == null || obj.count <= 0)
+                continue;
+
+            // Si se quiere que la distancia mínima aplique solamente a elementos del mismo prefab
+            List<Vector3> placedPositions = new List<Vector3>();
+
+            int attempts = 0;
+            int spawned = 0;
+
+            while (spawned < obj.count && attempts < obj.count * 10)
+            {
+                float posX = Random.Range(0f, terrainData.size.x);
+                float posZ = Random.Range(0f, terrainData.size.z);
+                float normX = posX / terrainData.size.x;
+                float normZ = posZ / terrainData.size.z;
+                float posY = terrainData.GetInterpolatedHeight(normX, normZ);
+
+                Vector3 worldPos = new Vector3(posX, posY, posZ) + terrain.transform.position;
+
+                // Check distance from all previous objects
+                bool tooClose = false;
+                foreach (var placed in placedPositions)
+                {
+                    if (Vector3.Distance(worldPos, placed) < obj.minDistance)
+                    {
+                        tooClose = true;
+                        break;
+                    }
+                }
+
+                if (!tooClose)
+                {
+                    Instantiate(obj.prefab, worldPos, Quaternion.Euler(0, Random.Range(0f, 360f), 0), this.transform);
+                    placedPositions.Add(worldPos);
+                    spawned++;
+                }
+
+                attempts++;
+            }
+        }
+    }
+
 }
