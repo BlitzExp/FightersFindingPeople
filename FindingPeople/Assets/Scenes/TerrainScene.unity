@@ -271,11 +271,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dcce7fd3d054836da8d007e60ae6cc00, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  terrainWidth: 50
-  terrainHeight: 50
-  terrainDepth: 5
+  terrainWidth: 250
+  terrainHeight: 250
+  terrainDepth: 50
   scale: 5
-  seed: 150
+  seed: 9
   offset: {x: 0, y: 0}
   terrainLayers:
   - {fileID: 8574412962073106934, guid: a5287fbeb2986ff44a94b0f50d1c158a, type: 2}
