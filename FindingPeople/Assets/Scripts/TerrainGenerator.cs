@@ -11,6 +11,8 @@ public class TerrainGenerator : MonoBehaviour
 
     [Header("Noise Settings")]
     public float scale = 20f;
+    //Checkbox fo
+    public bool randomseed;
     public int seed = 0;
     public Vector2 offset;
 
@@ -27,6 +29,9 @@ public class TerrainGenerator : MonoBehaviour
 
     void Start()
     {
+        if (randomseed)
+            seed = Random.Range(0, 10000);
+
         transform.position = terrainPosition;
 
         terrain = GetComponent<Terrain>();
@@ -166,9 +171,14 @@ public class TerrainGenerator : MonoBehaviour
         // Si se quiere que la distancia mínima sea inclusiva a todos los prefabs
         // List<Vector3> placedPositions = new List<Vector3>();
 
+
+
         foreach (var obj in spawnableObjects)
         {
-            if (obj.prefab == null || obj.count <= 0)
+            //Generate numebr of spawns
+            int count = Random.Range(obj.mincount, obj.maxcount);
+
+            if (obj.prefab == null || count <= 0)
                 continue;
 
             // Si se quiere que la distancia mínima aplique solamente a elementos del mismo prefab
@@ -177,13 +187,15 @@ public class TerrainGenerator : MonoBehaviour
             int attempts = 0;
             int spawned = 0;
 
-            while (spawned < obj.count && attempts < obj.count * 10)
+            while (spawned < count && attempts < count * 10)
             {
                 float posX = Random.Range(0f, terrainData.size.x);
                 float posZ = Random.Range(0f, terrainData.size.z);
                 float normX = posX / terrainData.size.x;
                 float normZ = posZ / terrainData.size.z;
                 float posY = terrainData.GetInterpolatedHeight(normX, normZ);
+
+                float scale = Random.Range(obj.minscale, obj.maxscale);
 
                 Vector3 worldPos = new Vector3(posX, posY, posZ) + terrain.transform.position;
 
@@ -200,7 +212,23 @@ public class TerrainGenerator : MonoBehaviour
 
                 if (!tooClose)
                 {
-                    Instantiate(obj.prefab, worldPos, Quaternion.Euler(0, Random.Range(0f, 360f), 0), this.transform);
+                    if (obj.name.Contains("Tree"))
+                    {
+                        Vector3 normal = terrainData.GetInterpolatedNormal(normX, normZ);
+                        float slope = Vector3.Angle(normal, Vector3.up);
+                        if (slope > 40)
+                        {
+                            attempts++;
+                            continue;
+                        }
+                        GameObject spawnedObject = Instantiate(obj.prefab, worldPos, Quaternion.Euler(-90, Random.Range(0f, 360f), 0), this.transform);
+                        spawnedObject.transform.localScale = Vector3.one * scale;
+                    }
+                    else 
+                    {
+                        GameObject spawnedObject = Instantiate(obj.prefab, worldPos, Quaternion.Euler(0, Random.Range(0f, 360f), 0), this.transform);
+                        spawnedObject.transform.localScale = Vector3.one * scale;
+                    }
                     placedPositions.Add(worldPos);
                     spawned++;
                 }
