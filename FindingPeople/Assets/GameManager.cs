@@ -28,20 +28,20 @@ public class GameManager : MonoBehaviour
     [SerializeField] private bool drawWireSphere = false;
 
     public personclass[] personsToSpawn;
-
-    public void SetXPos() // Añadido parámetro
+    [SerializeField] private DronManager _dronManager;
+    public void SetXPos() 
     {
         if (float.TryParse(xInput.text, out float result))
         {
-            xpos = result; // Asegúrate de que 'result' sea un float
+            xpos = result; // Asegï¿½rate de que 'result' sea un float
         }
         else
         {
-            Debug.LogError("El valor de X no es un número válido.");
+            Debug.LogError("El valor de X no es un nï¿½mero vï¿½lido.");
             xInput.text = xpos.ToString();
         }
     }
-    public void SetYPos() // Añadido parámetro
+    public void SetYPos() // Aï¿½adido parï¿½metro
     {
         if (float.TryParse(yInput.text, out float result))
         {
@@ -49,11 +49,11 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            Debug.LogError("El valor de Y no es un número válido.");
+            Debug.LogError("El valor de Y no es un nï¿½mero vï¿½lido.");
             yInput.text = ypos.ToString();
         }
     }
-    public void SetZPos() // Añadido parámetro
+    public void SetZPos() // Aï¿½adido parï¿½metro
     {
         if (float.TryParse(zInput.text, out float result))
         {
@@ -61,7 +61,7 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            Debug.LogError("El valor de Z no es un número válido.");
+            Debug.LogError("El valor de Z no es un nï¿½mero vï¿½lido.");
             zInput.text = zpos.ToString();
         }
     }
@@ -78,8 +78,9 @@ public class GameManager : MonoBehaviour
         genrateTerrain.SetPersonsToSpawn(personsToSpawn);
         genrateTerrain.personsCount = personsCount;
         genrateTerrain.objectivesCount = objectivesCount;
+        _dronManager.targetPos = GetPosition();
         genrateTerrain.StartGeneration();
-        Time.timeScale = 1f; // Asegura que el tiempo esté en marcha
+        Time.timeScale = 1f; // Asegura que el tiempo estï¿½ en marcha
     }
 
 
