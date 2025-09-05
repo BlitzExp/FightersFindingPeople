@@ -27,7 +27,7 @@ public class TerrainGenerator : MonoBehaviour
 
     private Terrain terrain;
 
-    void Start()
+    public void StartGeneration()
     {
         if (randomseed)
             seed = Random.Range(0, 10000);

@@ -2,7 +2,7 @@
 - Project name: FindingPeople
 - Unity version: Unity 6000.0.44f1
 - Active game object:
-  - Name: Terrain
+  - Name: Canvas
   - Tag: Untagged
-  - Layer: Default
+  - Layer: UI
 <!-- UNITY CODE ASSIST INSTRUCTIONS END -->
