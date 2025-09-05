@@ -1,0 +1,470 @@
+using UnityEngine;
+using System;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
+[RequireComponent(typeof(CharacterController))]
+[RequireComponent(typeof(SphereCollider))]
+[RequireComponent(typeof(Rigidbody))]
+public class DroneLandingModule : MonoBehaviour
+{
+    // === Landing / Motion ===
+    public float approachSpeed = 5f;
+    public float descendSpeed = 2f;
+    public float arriveThreshold = 0.2f;
+    public float stopHeightAboveGround = 0.08f;
+    public float maxLandSlope = 20f;
+    public float hoverAltitudeAboveGround = 2f;
+    public bool  maintainHoverOnApproach = true;
+
+    // === Layers ===
+    public LayerMask groundMask = 0;     // set this to your Ground layer(s)
+    public LayerMask obstacleMask = ~0;  // layers to consider as obstacles (NOT ground). If 0, mask is ignored
+
+    // === Trigger Sphere (avoidance bubble) ===
+    public float obstacleDetectionRadius = 0.6f; // world meters (visualized & synced to SphereCollider)
+    public bool  considerTriggerCollidersAsObstacles = false; // turn on if your obstacles use trigger colliders
+    public float replanCooldown = 0.25f;
+    public int   replanMaxTries = 16;
+
+    // === Controller tuning ===
+    public bool  zeroStepOffsetOnDescend = true;
+    public bool  relaxSlopeLimitOnDescend = true;
+    public float extraGravity = 0f;
+
+    public enum LandingState { Idle, ComputingSpot, Approaching, Descending, Landed, Aborted }
+    public LandingState State { get; private set; } = LandingState.Idle;
+
+    public event Action OnLandingStarted;
+    public event Action OnLanded;
+    public event Action<string> OnAborted;
+
+    // === Debug ===
+    [Header("Debug")]
+    public bool debug = true;
+    public bool debugVerbose = true;         // per-frame/trigger-decision chatter
+    public float debugInterval = 0.3f;       // throttle for verbose logs
+    float lastDbg;
+    string P => $"[DroneLanding:{name}] ";
+
+    CharacterController cc;
+    SphereCollider sphere;
+    Rigidbody rb;
+
+    Transform target;
+    Vector3 landingSpot; // ground point
+    float landingRadius;
+    System.Random rng = new System.Random();
+
+    float origStepOffset, origSlopeLimit;
+    float lastY, lastProgressT, lastReplanT;
+    Vector3 lastScale;
+
+    readonly RaycastHit[] rayBuf = new RaycastHit[16];
+    readonly Collider[]   overlapBuf = new Collider[32];
+
+    // ================= Lifecycle =================
+    void Awake()
+    {
+        cc = GetComponent<CharacterController>();
+        sphere = GetComponent<SphereCollider>();
+        rb = GetComponent<Rigidbody>();
+
+        rb.isKinematic = true;
+        rb.useGravity = false;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
+
+        origStepOffset = cc.stepOffset;
+        origSlopeLimit = cc.slopeLimit;
+
+        ConfigureTriggerSphere();
+        lastScale = transform.lossyScale;
+    }
+
+    void OnEnable()
+    {
+        if (debug)
+        {
+            Debug.Log($"{P}ENABLED\n" +
+                      $"  groundMask={MaskToString(groundMask)}\n" +
+                      $"  obstacleMask={MaskToString(obstacleMask)}\n" +
+                      $"  considerTriggerCollidersAsObstacles={considerTriggerCollidersAsObstacles}\n" +
+                      $"  worldRadius={obstacleDetectionRadius:F2}m  (SphereCollider.radius={sphere.radius:F3} local)");
+        }
+    }
+
+    void Reset()
+    {
+        // Ensure required components & baseline config in editor
+        if (!GetComponent<CharacterController>()) gameObject.AddComponent<CharacterController>();
+        if (!GetComponent<SphereCollider>()) gameObject.AddComponent<SphereCollider>();
+        if (!GetComponent<Rigidbody>()) gameObject.AddComponent<Rigidbody>();
+        Awake();
+    }
+
+    void OnValidate()
+    {
+        if (!sphere) sphere = GetComponent<SphereCollider>();
+        ConfigureTriggerSphere();
+    }
+
+    void ConfigureTriggerSphere()
+    {
+        if (!sphere) return;
+        sphere.isTrigger = true;
+        sphere.center = cc ? cc.center : Vector3.zero;
+
+        // Convert world radius → local radius using maximum axis (Unity scales spheres with max axis)
+        float maxAxis = MaxAxis(transform.lossyScale);
+        if (Mathf.Approximately(maxAxis, 0f)) maxAxis = 1f;
+        sphere.radius = Mathf.Max(0.01f, obstacleDetectionRadius / maxAxis);
+    }
+
+    static float MaxAxis(Vector3 v) => Mathf.Max(Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z));
+
+    // ================= Public API =================
+    public void StartLanding(Transform t, float radiusMeters)
+    {
+        if (!t) { Abort("No target."); return; }
+        if (State == LandingState.Approaching || State == LandingState.Descending) return;
+
+        target = t;
+        landingRadius = Mathf.Max(0.1f, radiusMeters);
+        State = LandingState.ComputingSpot;
+        OnLandingStarted?.Invoke();
+
+        if (!TryPickLandingSpot(out landingSpot))
+        {
+            Abort("No valid landing spot.");
+            return;
+        }
+
+        lastY = transform.position.y;
+        lastProgressT = Time.time;
+        State = LandingState.Approaching;
+        if (debug) Debug.Log($"{P}Start → spot {landingSpot:F3}  ringR={landingRadius:F2}");
+    }
+
+    public void CancelLanding(string reason = "Canceled") => Abort(reason);
+
+    // ================= Update =================
+    void Update()
+    {
+        // Keep trigger sphere synced if scale changes at runtime
+        if (transform.lossyScale != lastScale)
+        {
+            ConfigureTriggerSphere();
+            lastScale = transform.lossyScale;
+            if (debugVerbose) Debug.Log($"{P}Scale changed → sync SphereCollider.radius={sphere.radius:F3}");
+        }
+
+        if (State == LandingState.Approaching) TickApproach();
+        else if (State == LandingState.Descending) TickDescend();
+    }
+
+    // ================= Trigger-based avoidance =================
+    void OnTriggerEnter(Collider other) => TriggerEvent(other, "Enter");
+    void OnTriggerStay (Collider other) => TriggerEvent(other, "Stay");
+
+    void TriggerEvent(Collider other, string phase)
+    {
+        if (State != LandingState.Approaching && State != LandingState.Descending) return;
+
+        bool isObs = IsObstacle(other, out string why);
+        if (debugVerbose) Debug.Log($"{P}Trigger{phase}: '{other.name}' [layer={LayerMaskLayerName(other.gameObject.layer)}, isTrigger={other.isTrigger}] → {(isObs ? "OBSTACLE" : "ignored")} ({why})");
+
+        if (!isObs) return;
+
+        if (Time.time - lastReplanT < replanCooldown)
+        {
+            if (debugVerbose) ThrottledLog($"{P}Replan cooldown ({(Time.time - lastReplanT):F2}s)");
+            return;
+        }
+
+        lastReplanT = Time.time;
+        if (TryPickLandingSpot(out landingSpot))
+        {
+            State = LandingState.Approaching;
+            Debug.Log($"{P}REPLAN ({phase}:{other.name}) → new spot {landingSpot:F3}");
+        }
+        else
+        {
+            Abort($"Replan failed after {phase}:{other.name}");
+        }
+    }
+
+    bool IsObstacle(Collider c, out string why)
+    {
+        why = "";
+        if (!c) { why = "null"; return false; }
+
+        var tr = c.transform;
+        if (tr.root == transform.root || tr.IsChildOf(transform)) { why = "self"; return false; }
+        if (target && (tr == target || tr.IsChildOf(target)))     { why = "target"; return false; }
+
+        int layer = c.gameObject.layer;
+        if ((groundMask.value & (1 << layer)) != 0) { why = "groundMask"; return false; }
+
+        if (!considerTriggerCollidersAsObstacles && c.isTrigger) { why = "other.isTrigger & disabled"; return false; }
+
+        if (obstacleMask != 0 && (obstacleMask.value & (1 << layer)) == 0) { why = "outside obstacleMask"; return false; }
+
+        why = "valid obstacle";
+        return true;
+    }
+
+    // ================= Approach =================
+    void TickApproach()
+    {
+        Vector3 pos = transform.position;
+        Vector3 targetXZ = new Vector3(landingSpot.x, pos.y, landingSpot.z);
+
+        if (maintainHoverOnApproach)
+        {
+            float groundY = SampleGroundY(targetXZ, out var hitName, out var hitLayer);
+            float desiredY = groundY + hoverAltitudeAboveGround;
+            cc.Move(new Vector3(0f, Mathf.Lerp(pos.y, desiredY, 10f * Time.deltaTime) - pos.y, 0f));
+            pos = transform.position;
+
+            if (debugVerbose) ThrottledLog($"{P}APPROACH hover: groundY={groundY:F3} via '{hitName}'[{LayerMaskLayerName(hitLayer)}], posY={pos.y:F3}");
+        }
+
+        Vector2 toXZ = new Vector2(landingSpot.x - pos.x, landingSpot.z - pos.z);
+        if (toXZ.magnitude <= arriveThreshold)
+        {
+            PrepControllerForDescent();
+            State = LandingState.Descending;
+            if (debug) Debug.Log($"{P}Reached XZ → DESCEND");
+            return;
+        }
+
+        Vector3 dir = new Vector3(toXZ.x, 0, toXZ.y).normalized;
+        if (dir.sqrMagnitude > 1e-6f)
+        {
+            Quaternion look = Quaternion.LookRotation(new Vector3(dir.x, 0, dir.z), Vector3.up);
+            transform.rotation = Quaternion.Slerp(transform.rotation, look, 6f * Time.deltaTime);
+        }
+        cc.Move(dir * (approachSpeed * Time.deltaTime));
+    }
+
+    // ================= Descent =================
+    void TickDescend()
+    {
+        Vector3 pos = transform.position;
+
+        float groundY = SampleGroundY(new Vector3(landingSpot.x, pos.y, landingSpot.z), out var hitName, out var hitLayer);
+        float targetY = groundY + stopHeightAboveGround;
+
+        // gentle horizontal correction
+        Vector3 horiz = new Vector3(landingSpot.x - pos.x, 0f, landingSpot.z - pos.z);
+        float hMag = horiz.magnitude;
+        horiz = (hMag > arriveThreshold * 0.5f)
+              ? horiz.normalized * Mathf.Min(approachSpeed * 0.5f, hMag / Mathf.Max(Time.deltaTime, 1e-4f))
+              : Vector3.zero;
+
+        float dy = targetY - pos.y;
+        float vy = Mathf.Clamp(dy / Mathf.Max(Time.deltaTime, 1e-4f), -descendSpeed, descendSpeed);
+        if (extraGravity > 0f) vy -= extraGravity * Time.deltaTime;
+
+        cc.Move(new Vector3(horiz.x, vy, horiz.z) * Time.deltaTime);
+
+        // perch watchdog
+        float yNow = transform.position.y;
+        if (Mathf.Abs(yNow - lastY) > 0.005f) { lastY = yNow; lastProgressT = Time.time; }
+        else if (Time.time - lastProgressT > 0.75f)
+        {
+            cc.Move(new Vector3(0f, -Mathf.Max(0.05f, descendSpeed * 0.25f), 0f));
+            lastProgressT = Time.time;
+            if (debugVerbose) Debug.LogWarning($"{P}Watchdog downward nudge");
+        }
+
+        bool doneV = Mathf.Abs(transform.position.y - targetY) <= 0.01f;
+        bool doneH = (new Vector2(landingSpot.x - transform.position.x, landingSpot.z - transform.position.z)).sqrMagnitude <= 0.0004f;
+        if (doneV && doneH)
+        {
+            RestoreController();
+            State = LandingState.Landed;
+            Debug.Log($"{P}LANDED @ {transform.position:F3}");
+            OnLanded?.Invoke();
+        }
+
+        if (debugVerbose) ThrottledLog($"{P}DESCEND: posY={pos.y:F3} → targetY={targetY:F3} (ground '{hitName}'[{LayerMaskLayerName(hitLayer)}]) vy={vy:F3}");
+    }
+
+    // ================= Replan / Pick spot =================
+    bool TryPickLandingSpot(out Vector3 spot)
+    {
+        Vector3 tpos = target.position;
+
+        for (int i = 0; i < replanMaxTries; i++)
+        {
+            float a = (float)(rng.NextDouble() * Mathf.PI * 2f);
+            Vector3 castFrom = new Vector3(tpos.x + Mathf.Cos(a) * landingRadius, tpos.y + 5f, tpos.z + Mathf.Sin(a) * landingRadius);
+
+            if (Physics.Raycast(castFrom, Vector3.down, out RaycastHit hit, 1000f, groundMask, QueryTriggerInteraction.Ignore))
+            {
+                if (Vector3.Angle(hit.normal, Vector3.up) > maxLandSlope) continue;
+
+                Vector3 hover = new Vector3(hit.point.x, hit.point.y + stopHeightAboveGround, hit.point.z);
+                // Spot bubble must be clear (ignore ground/self/target)
+                if (SpotHasObstacle(hover)) continue;
+
+                spot = hit.point;
+                if (debugVerbose) Debug.Log($"{P}PickSpot ok → {spot:F3}");
+                return true;
+            }
+        }
+
+        // Fallback along +X
+        Vector3 fb = new Vector3(tpos.x + landingRadius, tpos.y + 5f, tpos.z);
+        if (Physics.Raycast(fb, Vector3.down, out RaycastHit fh, 1000f, groundMask, QueryTriggerInteraction.Ignore))
+        {
+            if (Vector3.Angle(fh.normal, Vector3.up) <= maxLandSlope)
+            {
+                Vector3 hover = new Vector3(fh.point.x, fh.point.y + stopHeightAboveGround, fh.point.z);
+                if (!SpotHasObstacle(hover)) { spot = fh.point; return true; }
+            }
+        }
+
+        spot = Vector3.zero;
+        if (debug) Debug.LogWarning($"{P}PickSpot failed");
+        return false;
+    }
+
+    bool SpotHasObstacle(Vector3 hoverPoint)
+    {
+        int n = Physics.OverlapSphereNonAlloc(hoverPoint, obstacleDetectionRadius, overlapBuf, ~0, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < n; i++)
+        {
+            if (IsObstacle(overlapBuf[i], out _)) return true;
+        }
+        return false;
+    }
+
+    void TryReplan(string why)
+    {
+        if (Time.time - lastReplanT < replanCooldown) return;
+        lastReplanT = Time.time;
+
+        if (TryPickLandingSpot(out landingSpot))
+        {
+            State = LandingState.Approaching;
+            Debug.Log($"{P}REPLAN ({why}) → new spot {landingSpot:F3}");
+        }
+        else
+        {
+            Abort($"Replan failed: {why}");
+        }
+    }
+
+    // ================= Controller & Ground =================
+    void PrepControllerForDescent()
+    {
+        origStepOffset = cc.stepOffset;
+        origSlopeLimit = cc.slopeLimit;
+        if (zeroStepOffsetOnDescend) cc.stepOffset = 0f;
+        if (relaxSlopeLimitOnDescend) cc.slopeLimit = 90f;
+        lastY = transform.position.y;
+        lastProgressT = Time.time;
+    }
+
+    void RestoreController()
+    {
+        cc.stepOffset = origStepOffset;
+        cc.slopeLimit = origSlopeLimit;
+    }
+
+    float SampleGroundY(Vector3 worldXZ, out string hitName, out int hitLayer)
+    {
+        hitName = "(none)"; hitLayer = -1;
+        Vector3 from = new Vector3(worldXZ.x, worldXZ.y + 1000f, worldXZ.z);
+        int count = Physics.RaycastNonAlloc(from, Vector3.down, rayBuf, 5000f, groundMask, QueryTriggerInteraction.Ignore);
+
+        float best = float.PositiveInfinity;
+        float y = transform.position.y - hoverAltitudeAboveGround;
+
+        for (int i = 0; i < count; i++)
+        {
+            var h = rayBuf[i];
+            if (!h.collider) continue;
+            var tr = h.collider.transform;
+            if (tr.root == transform.root || tr.IsChildOf(transform)) continue; // self
+            if (target && (tr == target || tr.IsChildOf(target))) continue;     // target
+            if (h.distance < best) { best = h.distance; y = h.point.y; hitName = h.collider.name; hitLayer = h.collider.gameObject.layer; }
+        }
+        return y;
+    }
+
+    void Abort(string reason)
+    {
+        RestoreController();
+        State = LandingState.Aborted;
+        Debug.LogWarning($"{P}ABORT → {reason}");
+        OnAborted?.Invoke(reason);
+        target = null;
+    }
+
+    // ================= Utils / Debug helpers =================
+    void ThrottledLog(string msg)
+    {
+        if (!debugVerbose) return;
+        if (Time.time - lastDbg >= debugInterval) { lastDbg = Time.time; Debug.Log(msg); }
+    }
+
+    static string LayerMaskLayerName(int layer)
+    {
+        if (layer < 0 || layer > 31) return $"#{layer}";
+        string n = LayerMask.LayerToName(layer);
+        return string.IsNullOrEmpty(n) ? $"#{layer}" : n;
+    }
+
+    static string MaskToString(LayerMask mask)
+    {
+        if (mask.value == 0) return "(none/0)";
+        if (mask.value == ~0) return "(Everything)";
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        for (int i = 0; i < 32; i++)
+        {
+            if ((mask.value & (1 << i)) != 0)
+            {
+                if (sb.Length > 0) sb.Append(", ");
+                string n = LayerMask.LayerToName(i);
+                sb.Append(string.IsNullOrEmpty(n) ? $"#{i}" : n);
+            }
+        }
+        return sb.ToString();
+    }
+
+    // ================= Gizmos =================
+#if UNITY_EDITOR
+    public bool gizmos = true;
+
+    void OnDrawGizmosSelected()
+    {
+        if (!gizmos) return;
+
+        // Landing ring at target
+        if (target)
+        {
+            Handles.color = Color.cyan;
+            Handles.DrawWireDisc(target.position, Vector3.up, landingRadius);
+        }
+
+        // Avoidance bubble (ring) at drone (world radius)
+        Handles.color = new Color(1f, 0.3f, 0.8f, 1f);
+        Handles.DrawWireDisc(transform.position, Vector3.up, obstacleDetectionRadius);
+
+        // Landing spot bubble
+        if (State != LandingState.Idle && landingSpot != Vector3.zero)
+        {
+            Vector3 hover = new Vector3(landingSpot.x, landingSpot.y + stopHeightAboveGround, landingSpot.z);
+            Gizmos.color = Color.green; Gizmos.DrawSphere(hover, 0.06f);
+            Handles.color = new Color(1f, 0.3f, 0.8f, 1f);
+            Handles.DrawWireDisc(hover, Vector3.up, obstacleDetectionRadius);
+        }
+    }
+#endif
+}
