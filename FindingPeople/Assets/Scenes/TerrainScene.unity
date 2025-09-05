@@ -481,6 +481,7 @@ MonoBehaviour:
   zInput: {fileID: 98997503}
   startscreen: {fileID: 1913628378}
   genrateTerrain: {fileID: 1705149158}
+  _dronManager: {fileID: 1184416702}
 --- !u!1 &314603203
 GameObject:
   m_ObjectHideFlags: 0
@@ -834,6 +835,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 408714841}
   m_CullTransparentMesh: 1
+--- !u!1 &443367141 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
+  m_PrefabInstance: {fileID: 1347816068}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &504842810
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2569,6 +2575,83 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
   m_PrefabInstance: {fileID: 1347816068}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1184416700
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 443367141}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7441aab9eb795d4689ec5137a9aa45c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetHeight: 120
+  speed: 40
+  acceleration: 5
+  maxSpeed: 25
+  reachedHeight: 0
+--- !u!54 &1184416701
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 443367141}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!114 &1184416702
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 443367141}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65d21bb2378531a408591fcdc33bff60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetPos: {x: 0, y: 0, z: 0}
+  dronElevator: {fileID: 1184416700}
+  dronMovement: {fileID: 1184416703}
+--- !u!114 &1184416703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 443367141}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd1dc3a3ae7c37e4f9fbd2921f8d6739, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dronManager: {fileID: 1184416702}
+  moveSpeed: 0
+  maxSpeed: 30
+  acceleration: 10
+  rotationSpeed: 2
+  rotationThreshold: 1
 --- !u!1 &1291094142
 GameObject:
   m_ObjectHideFlags: 0
@@ -2744,7 +2827,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -3.317
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
       propertyPath: m_LocalRotation.w
@@ -2780,8 +2863,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2053116148}
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1184416701}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1184416703}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1184416700}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1184416702}
   m_SourcePrefab: {fileID: 100100000, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
 --- !u!1 &1352687880
 GameObject:
@@ -4449,12 +4547,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2053116143}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.846, z: -6.683}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1184416699}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2055818749 stripped
 GameObject:
@@ -4576,7 +4674,6 @@ BoxCollider:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 2053116148}
   - {fileID: 1631913820}
   - {fileID: 1705149161}
   - {fileID: 2011059062}
