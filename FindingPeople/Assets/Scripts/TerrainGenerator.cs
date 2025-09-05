@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 
 [RequireComponent(typeof(Terrain))]
+[RequireComponent(typeof(TerrainCollider))]
 public class TerrainGenerator : MonoBehaviour
 {
     [Header("Terrain Settings")]
@@ -11,7 +12,6 @@ public class TerrainGenerator : MonoBehaviour
 
     [Header("Noise Settings")]
     public float scale = 20f;
-    //Checkbox fo
     public bool randomseed;
     public int seed = 0;
     public Vector2 offset;
@@ -19,30 +19,59 @@ public class TerrainGenerator : MonoBehaviour
     [Header("Textures")]
     public TerrainLayer[] terrainLayers;
 
-    [Header("Terrain Position")]
-    public Vector3 terrainPosition = Vector3.zero;
+    private Vector3 terrainPosition = Vector3.zero;
 
     [Header("Spawnable Objects")]
     public SpawnableObject[] spawnableObjects;
 
+    private personclass[] personsToSpawn;
     private Terrain terrain;
+
+    public int personsCount = 0;
+    public int objectivesCount = 0;
+
+    [SerializeField] public TerrainCollider terrainCol;
+
+    void Awake()
+    {
+        terrain = GetComponent<Terrain>();
+        if (terrainCol == null)
+            terrainCol = GetComponent<TerrainCollider>();
+    }
+
+    public void SetTerrainPosition(Vector3 pos)
+    {
+        terrainPosition = pos;
+    }
+
+    public void SetPersonsToSpawn(personclass[] persons)
+    {
+        personsToSpawn = persons;
+    }
 
     public void StartGeneration()
     {
         if (randomseed)
             seed = Random.Range(0, 10000);
 
-        transform.position = terrainPosition;
-
         terrain = GetComponent<Terrain>();
 
         TerrainData newTerrainData = new TerrainData();
         newTerrainData = GenerateTerrain(newTerrainData);
 
+        // Assign terrain data to Terrain
         terrain.terrainData = newTerrainData;
 
-        ApplyTextures(newTerrainData);
+        // Collider hookup
+        if (terrainCol == null) terrainCol = GetComponent<TerrainCollider>();
+        if (terrainCol == null) terrainCol = gameObject.AddComponent<TerrainCollider>();
+        terrainCol.terrainData = newTerrainData;
 
+        // IMPORTANT: set terrain transform position BEFORE spawning (so SampleHeight uses correct origin)
+        transform.position = terrainPosition - new Vector3(terrainWidth / 2f, 0, terrainHeight / 2f);
+
+        ApplyTextures(newTerrainData);
+        SpawnPersons(newTerrainData);
         SpawnObjects(newTerrainData);
     }
 
@@ -57,7 +86,6 @@ public class TerrainGenerator : MonoBehaviour
         return terrainData;
     }
 
-
     float[,] GenerateHeights(int resolution)
     {
         float[,] heights = new float[resolution, resolution];
@@ -69,6 +97,11 @@ public class TerrainGenerator : MonoBehaviour
         int octaves = 4;
         float persistence = 0.5f;
         float lacunarity = 2.0f;
+
+        // max possible amplitude for normalization
+        float maxPossible = 0f;
+        float amp = 1f;
+        for (int i = 0; i < octaves; i++) { maxPossible += amp; amp *= persistence; }
 
         for (int x = 0; x < resolution; x++)
         {
@@ -93,13 +126,13 @@ public class TerrainGenerator : MonoBehaviour
                     frequency *= lacunarity;
                 }
 
-                heights[x, y] = noiseHeight;
+                // normalize to [0,1]
+                heights[x, y] = Mathf.Clamp01(noiseHeight / maxPossible);
             }
         }
 
         return heights;
     }
-
 
     void ApplyTextures(TerrainData terrainData)
     {
@@ -121,8 +154,9 @@ public class TerrainGenerator : MonoBehaviour
         {
             for (int x = 0; x < alphamapWidth; x++)
             {
-                float normX = x * 1.0f / alphamapWidth;
-                float normY = y * 1.0f / alphamapHeight;
+                // use width-1 / height-1 so GetInterpolatedHeight uses 0..1 range correctly
+                float normX = (float)x / (alphamapWidth - 1);
+                float normY = (float)y / (alphamapHeight - 1);
 
                 float height = terrainData.GetInterpolatedHeight(normX, normY) / terrainDepth;
 
@@ -134,11 +168,14 @@ public class TerrainGenerator : MonoBehaviour
                         textureMix[i] = Mathf.Clamp01(1 - height * 2);
                     else if (i == 1)
                         textureMix[i] = Mathf.Clamp01(height * 2);
-                    
+                    else
+                        textureMix[i] = 0f; // additional textures default 0 (you can change blending)
                 }
 
-                float total = 0;
+                float total = 0f;
                 for (int i = 0; i < numTextures; i++) total += textureMix[i];
+                if (total == 0f) textureMix[0] = 1f; // avoid division by zero
+
                 for (int i = 0; i < numTextures; i++) textureMix[i] /= total;
 
                 for (int i = 0; i < numTextures; i++)
@@ -168,20 +205,13 @@ public class TerrainGenerator : MonoBehaviour
 
     void SpawnObjects(TerrainData terrainData)
     {
-        // Si se quiere que la distancia mínima sea inclusiva a todos los prefabs
-        // List<Vector3> placedPositions = new List<Vector3>();
-
-
-
         foreach (var obj in spawnableObjects)
         {
-            //Generate numebr of spawns
             int count = Random.Range(obj.mincount, obj.maxcount);
 
             if (obj.prefab == null || count <= 0)
                 continue;
 
-            // Si se quiere que la distancia mínima aplique solamente a elementos del mismo prefab
             List<Vector3> placedPositions = new List<Vector3>();
 
             int attempts = 0;
@@ -191,15 +221,15 @@ public class TerrainGenerator : MonoBehaviour
             {
                 float posX = Random.Range(0f, terrainData.size.x);
                 float posZ = Random.Range(0f, terrainData.size.z);
-                float normX = posX / terrainData.size.x;
-                float normZ = posZ / terrainData.size.z;
-                float posY = terrainData.GetInterpolatedHeight(normX, normZ);
+
+                Vector3 worldPos = new Vector3(posX, 0f, posZ) + terrain.transform.position;
+
+                // use terrain.SampleHeight(worldPos) � returns world-space y on the terrain
+                float posY = terrain.SampleHeight(worldPos);
+                worldPos.y = posY;
 
                 float scale = Random.Range(obj.minscale, obj.maxscale);
 
-                Vector3 worldPos = new Vector3(posX, posY, posZ) + terrain.transform.position;
-
-                // Check distance from all previous objects
                 bool tooClose = false;
                 foreach (var placed in placedPositions)
                 {
@@ -214,6 +244,9 @@ public class TerrainGenerator : MonoBehaviour
                 {
                     if (obj.name.Contains("Tree"))
                     {
+                        // compute normalized coords for slope check
+                        float normX = (worldPos.x - terrain.transform.position.x) / terrainData.size.x;
+                        float normZ = (worldPos.z - terrain.transform.position.z) / terrainData.size.z;
                         Vector3 normal = terrainData.GetInterpolatedNormal(normX, normZ);
                         float slope = Vector3.Angle(normal, Vector3.up);
                         if (slope > 40)
@@ -224,7 +257,7 @@ public class TerrainGenerator : MonoBehaviour
                         GameObject spawnedObject = Instantiate(obj.prefab, worldPos, Quaternion.Euler(-90, Random.Range(0f, 360f), 0), this.transform);
                         spawnedObject.transform.localScale = Vector3.one * scale;
                     }
-                    else 
+                    else
                     {
                         GameObject spawnedObject = Instantiate(obj.prefab, worldPos, Quaternion.Euler(0, Random.Range(0f, 360f), 0), this.transform);
                         spawnedObject.transform.localScale = Vector3.one * scale;
@@ -238,4 +271,115 @@ public class TerrainGenerator : MonoBehaviour
         }
     }
 
+    void SpawnPersons(TerrainData terrainData)
+    {
+        if (personsToSpawn == null || personsToSpawn.Length == 0)
+        {
+            Debug.LogWarning("No persons to spawn assigned!");
+            return;
+        }
+
+        List<Vector3> placedPositions = new List<Vector3>();
+        int spawnedPersons = 0;
+
+        // spawn objectives first
+        foreach (var person in personsToSpawn)
+        {
+            if (person == null || person.prefab == null) continue;
+            if (person.isObjective)
+            {
+                Vector3 spawnPos = GetPositionWithinRadius(terrainData, 20f, placedPositions);
+
+                // safe height using terrain (no double add)
+                float safeY = terrain.SampleHeight(spawnPos);
+                spawnPos.y = safeY;
+
+                GameObject spawnedPerson = Instantiate(person.prefab, spawnPos, Quaternion.identity, this.transform);
+                spawnedPerson.transform.localRotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
+
+                Collider col = spawnedPerson.GetComponent<Collider>();
+                if (col != null)
+                {
+                    float halfHeight = col.bounds.extents.y;
+                    spawnedPerson.transform.position += Vector3.up * (halfHeight + 0.01f); // small offset
+                }
+
+                placedPositions.Add(spawnPos);
+                spawnedPersons++;
+                objectivesCount++;
+            }
+        }
+
+        int attempts = 0;
+        while (spawnedPersons < personsCount && attempts < personsCount * 20)
+        {
+            var nonObjective = personsToSpawn[Random.Range(0, personsToSpawn.Length)];
+            if (nonObjective == null || nonObjective.prefab == null || nonObjective.isObjective)
+            {
+                attempts++;
+                continue;
+            }
+
+            Vector3 spawnPos = GetPositionWithinRadius(terrainData, 20f, placedPositions);
+
+            float safeY = terrain.SampleHeight(spawnPos);
+            spawnPos.y = safeY;
+
+            GameObject spawnedPerson = Instantiate(nonObjective.prefab, spawnPos, Quaternion.identity, this.transform);
+            spawnedPerson.transform.localRotation = Quaternion.Euler(-90, Random.Range(0f, 360f), 0);
+
+            Collider col2 = spawnedPerson.GetComponent<Collider>();
+            float extraHeight = (col2 != null) ? col2.bounds.extents.y + 0.01f : 0f;
+
+            spawnedPerson.transform.position = new Vector3(spawnPos.x, safeY + extraHeight, spawnPos.z);
+
+            placedPositions.Add(spawnPos);
+            spawnedPersons++;
+            attempts++;
+        }
+
+        Debug.Log($"Spawned {spawnedPersons} persons. Objectives: {objectivesCount}");
+    }
+
+    Vector3 GetRandomPositionOnTerrainWithinRadius(TerrainData terrainData, float radius)
+    {
+        // center of the terrain
+        Vector3 terrainOrigin = terrain.transform.position;
+        Vector3 center = terrainOrigin + new Vector3(terrainData.size.x / 2f, 0f, terrainData.size.z / 2f);
+
+        Vector2 randomCircle = Random.insideUnitCircle * radius;
+        float posX = center.x + randomCircle.x;
+        float posZ = center.z + randomCircle.y; // <-- FIX: use circle Y not a full-range Z
+
+        Vector3 worldPos = new Vector3(posX, 0f, posZ);
+
+        float posY = terrain.SampleHeight(worldPos);
+        return new Vector3(posX, posY + 0.01f, posZ);
+    }
+
+    Vector3 GetPositionWithinRadius(TerrainData terrainData, float radius, List<Vector3> placedPositions)
+    {
+        int maxTries = 30;
+        float minDistance = 2f;
+
+        for (int i = 0; i < maxTries; i++)
+        {
+            Vector3 candidate = GetRandomPositionOnTerrainWithinRadius(terrainData, radius);
+
+            bool tooClose = false;
+            foreach (var placed in placedPositions)
+            {
+                if (Vector3.Distance(candidate, placed) < minDistance)
+                {
+                    tooClose = true;
+                    break;
+                }
+            }
+
+            if (!tooClose)
+                return candidate;
+        }
+
+        return GetRandomPositionOnTerrainWithinRadius(terrainData, radius);
+    }
 }

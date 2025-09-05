@@ -1,18 +1,21 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 
 [RequireComponent(typeof(Rigidbody))]
 public class BotMovement : MonoBehaviour
 {
-    [Header("Configuración Movimiento")]
-    public Vector2 speedRange = new Vector2(2f, 6f); // Rango de velocidad aleatoria
-    public float rotationSpeed = 5f;                 // Velocidad de giro
-    public float movementRadius = 20f;               // Radio máximo permitido
-    public Transform centerPoint;                    // Punto central definido por el usuario
+    [Header("ConfiguraciÃ³n Movimiento")]
+    public Vector2 speedRange = new Vector2(2f, 6f);
+    public float rotationSpeed = 5f;
+    public float movementRadius = 20f;
+    public Transform centerPoint;
 
     [Header("Tiempos Random")]
-    public Vector2 moveDurationRange = new Vector2(2f, 5f);   // Tiempo moviéndose
-    public Vector2 stopDurationRange = new Vector2(1f, 3f);   // Tiempo quieto
+    public Vector2 moveDurationRange = new Vector2(2f, 5f);
+    public Vector2 stopDurationRange = new Vector2(1f, 3f);
+
+    [Header("Terrain (assign or auto-find)")]
+    public Terrain terrain; // assign the Terrain (the one generated) in inspector; if null, will try to find one
 
     private Animator botAnim;
     private Rigidbody rb;
@@ -24,13 +27,24 @@ public class BotMovement : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         botAnim = GetComponent<Animator>();
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+
+        if (terrain == null)
+        {
+            // try to find the nearest Terrain to this bot
+            terrain = Terrain.activeTerrain;
+            if (terrain == null)
+            {
+                Terrain[] all = FindObjectsOfType<Terrain>();
+                if (all.Length > 0) terrain = all[0];
+            }
+        }
     }
 
     private void Start()
     {
         StartCoroutine(MovementRoutine());
     }
-
 
     public void setCenterPoint(Transform point)
     {
@@ -39,17 +53,27 @@ public class BotMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (terrain == null) return; // no terrain -> don't move vertically
+
         if (isMoving)
         {
+            // obstacle avoidance or steering omitted here (keep your previous avoidance if needed)
+
             Vector3 newPos = rb.position + moveDirection * currentSpeed * Time.fixedDeltaTime;
-            if (Vector3.Distance(centerPoint.position, newPos) <= movementRadius)
-            {
-                rb.MovePosition(newPos);
-            }
-            else
+
+            if (centerPoint != null && Vector3.Distance(centerPoint.position, newPos) > movementRadius)
             {
                 moveDirection = (centerPoint.position - rb.position).normalized;
+                newPos = rb.position + moveDirection * currentSpeed * Time.fixedDeltaTime;
             }
+
+            // sample height from the SAME terrain
+            float terrainHeight = terrain.SampleHeight(newPos);
+            // ensure world y takes into account terrain.transform.position.y (SampleHeight already does)
+            Vector3 terrainPos = new Vector3(newPos.x, terrainHeight, newPos.z);
+
+            rb.MovePosition(terrainPos);
+
             if (moveDirection != Vector3.zero)
             {
                 Quaternion targetRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
@@ -62,23 +86,27 @@ public class BotMovement : MonoBehaviour
     {
         while (true)
         {
-            // --- Fase de movimiento ---
             isMoving = true;
             currentSpeed = Random.Range(speedRange.x, speedRange.y);
             moveDirection = GetRandomDirection();
 
-            botAnim.SetBool("IsMoving", true);
-            botAnim.SetFloat("Speed", currentSpeed);
+            if (botAnim != null)
+            {
+                botAnim.SetBool("IsMoving", true);
+                botAnim.SetFloat("Speed", currentSpeed);
+            }
 
             float moveTime = Random.Range(moveDurationRange.x, moveDurationRange.y);
             yield return new WaitForSeconds(moveTime);
 
-            // --- Fase de stop ---
             isMoving = false;
             currentSpeed = 0f;
 
-            botAnim.SetBool("IsMoving", false);
-            botAnim.SetFloat("Speed", currentSpeed);
+            if (botAnim != null)
+            {
+                botAnim.SetBool("IsMoving", false);
+                botAnim.SetFloat("Speed", currentSpeed);
+            }
 
             float stopTime = Random.Range(stopDurationRange.x, stopDurationRange.y);
             yield return new WaitForSeconds(stopTime);
