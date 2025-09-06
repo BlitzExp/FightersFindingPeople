@@ -350,6 +350,8 @@ GameObject:
   - component: {fileID: 1397019208}
   - component: {fileID: 1397019207}
   - component: {fileID: 1397019206}
+  - component: {fileID: 1397019211}
+  - component: {fileID: 1397019210}
   m_Layer: 5
   m_Name: Sphere
   m_TagString: Target
@@ -446,6 +448,54 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1397019210
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1397019205}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90e14ca8be30345079efe28726e119b3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  centerTransform: {fileID: 0}
+  patrolRadius: 5
+  innerRadiusFraction: 0.502
+  moveSpeed: 3
+  turnSpeedDegPerSec: 180
+  hoverAltitude: 0
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  altitudeAdjustSpeed: 6
+  altitudeChangeThreshold: 0.01
+--- !u!143 &1397019211
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1397019205}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 1
+  m_Radius: 0.5
+  m_SlopeLimit: 45
+  m_StepOffset: 0.3
+  m_SkinWidth: 0.08
+  m_MinMoveDistance: 0.001
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1575133801
 GameObject:
   m_ObjectHideFlags: 0
@@ -748,10 +798,14 @@ MonoBehaviour:
   approachSpeed: 5
   descendSpeed: 2
   arriveThreshold: 0.2
-  stopHeightAboveGround: 0.08
+  stopHeightAboveGround: 0
   maxLandSlope: 20
   hoverAltitudeAboveGround: 2
   maintainHoverOnApproach: 0
+  followMovingTarget: 1
+  retargetInterval: 0.15
+  minSpotShiftToApply: 0.25
+  lockWhenBelowHeight: 1
   groundMask:
     serializedVersion: 2
     m_Bits: 16
@@ -759,7 +813,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 33
   obstacleDetectionRadius: 2
-  considerTriggerCollidersAsObstacles: 0
+  considerTriggerCollidersAsObstacles: 1
   replanCooldown: 0.4
   replanMaxTries: 12
   zeroStepOffsetOnDescend: 1
