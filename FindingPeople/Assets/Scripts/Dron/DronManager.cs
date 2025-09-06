@@ -2,18 +2,18 @@ using UnityEngine;
 
 public class DronManager : MonoBehaviour
 {
-    public Vector3 targetPos = Vector3.zero;  // Posición objetivo inicial
-    private Vector3 lastTargetPos;            // Para detectar cambios en targetPos
+    public Vector3 targetPos = Vector3.zero; 
+    private Vector3 lastTargetPos; 
 
-    public DronHeight dronElevator;       // Asigna en el Inspector
-    public DronMovement dronMovement;         // Asigna en el Inspector
+    public DronHeight dronElevator; 
+    public DronMovement dronMovement; 
 
     private bool movementStarted = false;
 
     void Start()
     {
-        lastTargetPos = targetPos;            // Inicializamos con la posición actual
-        dronMovement.enabled = false;         // El movimiento comienza desactivado
+        lastTargetPos = targetPos; 
+        dronMovement.enabled = false;   
     }
 
     void Update()

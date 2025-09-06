@@ -8,19 +8,21 @@ public class DronMovement : MonoBehaviour
     public float acceleration = 10f;
     public float rotationSpeed = 2f;
     public float rotationThreshold = 1f;
+
+    // Makes the dron move towards the target position set in the DronManager script
     void Update()
     {
         Vector3 currentPos = transform.position;
         Vector3 target = new Vector3(dronManager.targetPos.x, currentPos.y, dronManager.targetPos.z);
         Vector3 direction = (target - currentPos).normalized;
 
-        if (direction == Vector3.zero) return; // Evita errores si ya está en el objetivo
+        if (direction == Vector3.zero) return;
 
-        // Rotación hacia la dirección
+        // Sets rotation towards the target
         Quaternion targetRotation = Quaternion.LookRotation(direction);
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
 
-        // Verifica si está alineado antes de moverse
+        
         float angleDifference = Quaternion.Angle(transform.rotation, targetRotation);
         if (angleDifference < rotationThreshold)
         {
@@ -28,6 +30,7 @@ public class DronMovement : MonoBehaviour
 
             if (Vector3.Distance(currentPos, target) > 0.1f)
             {
+                // Moves towards the target
                 transform.position = Vector3.MoveTowards(currentPos, target, moveSpeed * Time.deltaTime);
             }
             else

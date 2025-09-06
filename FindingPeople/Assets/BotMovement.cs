@@ -1,31 +1,39 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 
 [RequireComponent(typeof(Rigidbody))]
 public class BotMovement : MonoBehaviour
 {
-    [Header("Configuración Movimiento")]
-    public Vector2 speedRange = new Vector2(2f, 6f); // Rango de velocidad aleatoria
-    public float rotationSpeed = 5f;                 // Velocidad de giro
-    public float movementRadius = 20f;               // Radio máximo permitido
-    public Transform centerPoint;                    // Punto central definido por el usuario
+    [Header("Movement Config")]
+    public Vector2 speedRange = new Vector2(2f, 6f);
+    public float rotationSpeed = 5f;
+    public float movementRadius = 20f;
+    public Transform centerPoint;
 
-    [Header("Tiempos Random")]
-    public Vector2 moveDurationRange = new Vector2(2f, 5f);   // Tiempo moviéndose
-    public Vector2 stopDurationRange = new Vector2(1f, 3f);   // Tiempo quieto
+    [Header("Randomness")]
+    public Vector2 moveDurationRange = new Vector2(2f, 5f);
+    public Vector2 stopDurationRange = new Vector2(1f, 3f);
 
+    [Header("Terrain")]
+    public Terrain terrain;
+
+    //Animation and Rigidbody
     private Animator botAnim;
     private Rigidbody rb;
     private Vector3 moveDirection;
     private bool isMoving = false;
     private float currentSpeed;
 
+    // Initialize components and constraints
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
         botAnim = GetComponent<Animator>();
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
     }
 
+
+    //After initializing the character, start the movement routine
     private void Start()
     {
         StartCoroutine(MovementRoutine());
@@ -37,19 +45,27 @@ public class BotMovement : MonoBehaviour
         centerPoint = point;
     }
 
+
+    // Makes the movement and rotation of the caracter posible in the terrain environment throught the use of Rigidbody. Also makes sure the character is on the desired radious
     private void FixedUpdate()
     {
+        if (terrain == null) return; // no terrain -> don't move vertically
+
         if (isMoving)
         {
             Vector3 newPos = rb.position + moveDirection * currentSpeed * Time.fixedDeltaTime;
-            if (Vector3.Distance(centerPoint.position, newPos) <= movementRadius)
-            {
-                rb.MovePosition(newPos);
-            }
-            else
+
+            if (centerPoint != null && Vector3.Distance(centerPoint.position, newPos) > movementRadius)
             {
                 moveDirection = (centerPoint.position - rb.position).normalized;
+                newPos = rb.position + moveDirection * currentSpeed * Time.fixedDeltaTime;
             }
+
+            float terrainHeight = terrain.SampleHeight(newPos);
+            Vector3 terrainPos = new Vector3(newPos.x, terrainHeight, newPos.z);
+
+            rb.MovePosition(terrainPos);
+
             if (moveDirection != Vector3.zero)
             {
                 Quaternion targetRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
@@ -58,33 +74,39 @@ public class BotMovement : MonoBehaviour
         }
     }
 
+    // The caracter routine, it moves and stops in random intervals and directions
     private IEnumerator MovementRoutine()
     {
         while (true)
         {
-            // --- Fase de movimiento ---
             isMoving = true;
             currentSpeed = Random.Range(speedRange.x, speedRange.y);
             moveDirection = GetRandomDirection();
 
-            botAnim.SetBool("IsMoving", true);
-            botAnim.SetFloat("Speed", currentSpeed);
+            if (botAnim != null)
+            {
+                botAnim.SetBool("IsMoving", true);
+                botAnim.SetFloat("Speed", currentSpeed);
+            }
 
             float moveTime = Random.Range(moveDurationRange.x, moveDurationRange.y);
             yield return new WaitForSeconds(moveTime);
 
-            // --- Fase de stop ---
             isMoving = false;
             currentSpeed = 0f;
 
-            botAnim.SetBool("IsMoving", false);
-            botAnim.SetFloat("Speed", currentSpeed);
+            if (botAnim != null)
+            {
+                botAnim.SetBool("IsMoving", false);
+                botAnim.SetFloat("Speed", currentSpeed);
+            }
 
             float stopTime = Random.Range(stopDurationRange.x, stopDurationRange.y);
             yield return new WaitForSeconds(stopTime);
         }
     }
 
+    // Generates a random direction on the XZ plane
     private Vector3 GetRandomDirection()
     {
         Vector2 randomDir = Random.insideUnitCircle.normalized;
