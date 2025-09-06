@@ -1634,7 +1634,7 @@ MonoBehaviour:
   centerPoint: {fileID: 602324619}
   moveDurationRange: {x: 3, y: 5}
   stopDurationRange: {x: 2, y: 3}
-  terrain: {fileID: 0}
+  terrain: {fileID: 1705149160}
 --- !u!54 &880781796
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1857,7 +1857,7 @@ MonoBehaviour:
   centerPoint: {fileID: 602324619}
   moveDurationRange: {x: 3, y: 5}
   stopDurationRange: {x: 2, y: 3}
-  terrain: {fileID: 0}
+  terrain: {fileID: 1705149160}
 --- !u!136 &960588362
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -4376,15 +4376,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: ea058d8d554c65b4e95d625528dca4c6, type: 3}
       propertyPath: m_LocalScale.x
-      value: 24.2
+      value: 57.709995
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: ea058d8d554c65b4e95d625528dca4c6, type: 3}
       propertyPath: m_LocalScale.y
-      value: 24.2
+      value: 57.709995
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: ea058d8d554c65b4e95d625528dca4c6, type: 3}
       propertyPath: m_LocalScale.z
-      value: 1.4809947
+      value: 3.5317438
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: ea058d8d554c65b4e95d625528dca4c6, type: 3}
       propertyPath: m_LocalPosition.x
@@ -4702,7 +4702,7 @@ MonoBehaviour:
   centerPoint: {fileID: 602324619}
   moveDurationRange: {x: 3, y: 5}
   stopDurationRange: {x: 2, y: 3}
-  terrain: {fileID: 0}
+  terrain: {fileID: 1705149160}
 --- !u!54 &2055818753
 Rigidbody:
   m_ObjectHideFlags: 0

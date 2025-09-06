@@ -10,7 +10,7 @@ public class GameManager : MonoBehaviour
     public int personsCount = 0;
     public int objectivesCount = 0;
 
-    [SerializeField] private TMP_InputField xInput; // Cambiado a TMP_InputField
+    [SerializeField] private TMP_InputField xInput; 
     [SerializeField] private TMP_InputField yInput;
     [SerializeField] private TMP_InputField zInput;
 
@@ -29,19 +29,22 @@ public class GameManager : MonoBehaviour
 
     public personclass[] personsToSpawn;
     [SerializeField] private DronManager _dronManager;
+
+    //Obtains the value of the input for the X axis
     public void SetXPos() 
     {
         if (float.TryParse(xInput.text, out float result))
         {
-            xpos = result; // Aseg�rate de que 'result' sea un float
+            xpos = result;
         }
         else
         {
-            Debug.LogError("El valor de X no es un n�mero v�lido.");
             xInput.text = xpos.ToString();
         }
     }
-    public void SetYPos() // A�adido par�metro
+
+    //Obtains the value of the input for the Y axis (This is not being used)
+    public void SetYPos()
     {
         if (float.TryParse(yInput.text, out float result))
         {
@@ -49,11 +52,12 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            Debug.LogError("El valor de Y no es un n�mero v�lido.");
             yInput.text = ypos.ToString();
         }
     }
-    public void SetZPos() // A�adido par�metro
+
+    //Obtains the value of the input for the Z axis (This is being used insted of the Y one)
+    public void SetZPos() 
     {
         if (float.TryParse(zInput.text, out float result))
         {
@@ -61,14 +65,17 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            Debug.LogError("El valor de Z no es un n�mero v�lido.");
             zInput.text = zpos.ToString();
         }
     }
+
+    //Returns a Vector3 with the position values for the center of the search radious
     public Vector3 GetPosition()
     {
         return new Vector3(xpos, ypos, zpos);
     }
+
+    //Once the "Start Game" button is pressed, this function will hide the start screen and start the terrain generation
     public void StartGame()
     {
         startscreen.SetActive(false);
@@ -80,10 +87,10 @@ public class GameManager : MonoBehaviour
         genrateTerrain.objectivesCount = objectivesCount;
         _dronManager.targetPos = GetPosition();
         genrateTerrain.StartGeneration();
-        Time.timeScale = 1f; // Asegura que el tiempo est� en marcha
+        Time.timeScale = 1f; 
     }
 
-
+    // Mark the search area in the scene view
     private void OnDrawGizmos()
     {
         if (refPoint == null) return;
@@ -91,14 +98,11 @@ public class GameManager : MonoBehaviour
         Gizmos.color = gizmoColor;
         Vector3 center = refPoint.transform.position;
 
-        // Draw bottom circle
         DrawCircle(center, radius, segments);
 
-        // Draw top circle
         Vector3 topCenter = center + Vector3.up * height;
         DrawCircle(topCenter, radius, segments);
 
-        // Draw vertical lines
         int verticalLines = Mathf.Clamp(8, 3, 32);
         for (int i = 0; i < verticalLines; i++)
         {
@@ -109,7 +113,6 @@ public class GameManager : MonoBehaviour
             Gizmos.DrawLine(a, b);
         }
 
-        // Optional sphere
         if (drawWireSphere)
         {
             Vector3 sphereCenter = center + Vector3.up * (height * 0.5f);
@@ -117,6 +120,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // Function to draw a circle in the XZ plane
     private void DrawCircle(Vector3 center, float r, int seg)
     {
         if (seg < 3) seg = 3;

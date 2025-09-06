@@ -32,6 +32,7 @@ public class TerrainGenerator : MonoBehaviour
 
     [SerializeField] public TerrainCollider terrainCol;
 
+    // Reference to the Terrain component
     void Awake()
     {
         terrain = GetComponent<Terrain>();
@@ -39,18 +40,22 @@ public class TerrainGenerator : MonoBehaviour
             terrainCol = GetComponent<TerrainCollider>();
     }
 
+    // Set the posiciont value form the GameManager script
     public void SetTerrainPosition(Vector3 pos)
     {
         terrainPosition = pos;
     }
 
+    // Set the persons to spawn from the GameManager script
     public void SetPersonsToSpawn(personclass[] persons)
     {
         personsToSpawn = persons;
     }
 
+    //Starts the terrain generation after all the values aere obtained
     public void StartGeneration()
     {
+        // Generates a random terrain seed
         if (randomseed)
             seed = Random.Range(0, 10000);
 
@@ -59,15 +64,13 @@ public class TerrainGenerator : MonoBehaviour
         TerrainData newTerrainData = new TerrainData();
         newTerrainData = GenerateTerrain(newTerrainData);
 
-        // Assign terrain data to Terrain
         terrain.terrainData = newTerrainData;
 
-        // Collider hookup
+        // Makes the terrain collider match the generated terrain
         if (terrainCol == null) terrainCol = GetComponent<TerrainCollider>();
         if (terrainCol == null) terrainCol = gameObject.AddComponent<TerrainCollider>();
         terrainCol.terrainData = newTerrainData;
 
-        // IMPORTANT: set terrain transform position BEFORE spawning (so SampleHeight uses correct origin)
         transform.position = terrainPosition - new Vector3(terrainWidth / 2f, 0, terrainHeight / 2f);
 
         ApplyTextures(newTerrainData);
@@ -75,6 +78,7 @@ public class TerrainGenerator : MonoBehaviour
         SpawnObjects(newTerrainData);
     }
 
+    // Generates the terrain heights using Perlin noise
     TerrainData GenerateTerrain(TerrainData terrainData)
     {
         int resolution = GetClosestValidResolution(Mathf.Max(terrainWidth, terrainHeight));
@@ -86,6 +90,7 @@ public class TerrainGenerator : MonoBehaviour
         return terrainData;
     }
 
+    // Generates a height map using Perlin noise
     float[,] GenerateHeights(int resolution)
     {
         float[,] heights = new float[resolution, resolution];
@@ -98,7 +103,6 @@ public class TerrainGenerator : MonoBehaviour
         float persistence = 0.5f;
         float lacunarity = 2.0f;
 
-        // max possible amplitude for normalization
         float maxPossible = 0f;
         float amp = 1f;
         for (int i = 0; i < octaves; i++) { maxPossible += amp; amp *= persistence; }
@@ -126,7 +130,6 @@ public class TerrainGenerator : MonoBehaviour
                     frequency *= lacunarity;
                 }
 
-                // normalize to [0,1]
                 heights[x, y] = Mathf.Clamp01(noiseHeight / maxPossible);
             }
         }
@@ -134,6 +137,7 @@ public class TerrainGenerator : MonoBehaviour
         return heights;
     }
 
+    // Applies textures to the terrain based on height
     void ApplyTextures(TerrainData terrainData)
     {
         if (terrainLayers.Length == 0)
@@ -154,7 +158,6 @@ public class TerrainGenerator : MonoBehaviour
         {
             for (int x = 0; x < alphamapWidth; x++)
             {
-                // use width-1 / height-1 so GetInterpolatedHeight uses 0..1 range correctly
                 float normX = (float)x / (alphamapWidth - 1);
                 float normY = (float)y / (alphamapHeight - 1);
 
@@ -169,12 +172,12 @@ public class TerrainGenerator : MonoBehaviour
                     else if (i == 1)
                         textureMix[i] = Mathf.Clamp01(height * 2);
                     else
-                        textureMix[i] = 0f; // additional textures default 0 (you can change blending)
+                        textureMix[i] = 0f;
                 }
 
                 float total = 0f;
                 for (int i = 0; i < numTextures; i++) total += textureMix[i];
-                if (total == 0f) textureMix[0] = 1f; // avoid division by zero
+                if (total == 0f) textureMix[0] = 1f;
 
                 for (int i = 0; i < numTextures; i++) textureMix[i] /= total;
 
@@ -188,6 +191,7 @@ public class TerrainGenerator : MonoBehaviour
         terrainData.SetAlphamaps(0, 0, alphamaps);
     }
 
+    // Returns the closest valid terrain resolution
     int GetClosestValidResolution(int terrainSize)
     {
         int[] validResolutions = { 33, 65, 129, 257, 513, 1025, 2049, 4097 };
@@ -203,6 +207,7 @@ public class TerrainGenerator : MonoBehaviour
         return 4097;
     }
 
+    //Spawns objects like trees and rocks on the terrain, this makes sure they do not ovelap and applies some randomnes to the objects
     void SpawnObjects(TerrainData terrainData)
     {
         foreach (var obj in spawnableObjects)
@@ -224,7 +229,6 @@ public class TerrainGenerator : MonoBehaviour
 
                 Vector3 worldPos = new Vector3(posX, 0f, posZ) + terrain.transform.position;
 
-                // use terrain.SampleHeight(worldPos) — returns world-space y on the terrain
                 float posY = terrain.SampleHeight(worldPos);
                 worldPos.y = posY;
 
@@ -244,7 +248,6 @@ public class TerrainGenerator : MonoBehaviour
                 {
                     if (obj.name.Contains("Tree"))
                     {
-                        // compute normalized coords for slope check
                         float normX = (worldPos.x - terrain.transform.position.x) / terrainData.size.x;
                         float normZ = (worldPos.z - terrain.transform.position.z) / terrainData.size.z;
                         Vector3 normal = terrainData.GetInterpolatedNormal(normX, normZ);
@@ -271,6 +274,7 @@ public class TerrainGenerator : MonoBehaviour
         }
     }
 
+    // Spawns persons on the terrain, ensuring objectives are placed first and spacing is maintained
     void SpawnPersons(TerrainData terrainData)
     {
         if (personsToSpawn == null || personsToSpawn.Length == 0)
@@ -282,15 +286,13 @@ public class TerrainGenerator : MonoBehaviour
         List<Vector3> placedPositions = new List<Vector3>();
         int spawnedPersons = 0;
 
-        // spawn objectives first
+        // spawn objective persons
         foreach (var person in personsToSpawn)
         {
             if (person == null || person.prefab == null) continue;
             if (person.isObjective)
             {
                 Vector3 spawnPos = GetPositionWithinRadius(terrainData, 20f, placedPositions);
-
-                // safe height using terrain (no double add)
                 float safeY = terrain.SampleHeight(spawnPos);
                 spawnPos.y = safeY;
 
@@ -301,7 +303,7 @@ public class TerrainGenerator : MonoBehaviour
                 if (col != null)
                 {
                     float halfHeight = col.bounds.extents.y;
-                    spawnedPerson.transform.position += Vector3.up * (halfHeight + 0.01f); // small offset
+                    spawnedPerson.transform.position += Vector3.up * (halfHeight + 0.01f); 
                 }
 
                 placedPositions.Add(spawnPos);
@@ -310,6 +312,7 @@ public class TerrainGenerator : MonoBehaviour
             }
         }
 
+        // spawn non-objective persons
         int attempts = 0;
         while (spawnedPersons < personsCount && attempts < personsCount * 20)
         {
@@ -341,6 +344,7 @@ public class TerrainGenerator : MonoBehaviour
         Debug.Log($"Spawned {spawnedPersons} persons. Objectives: {objectivesCount}");
     }
 
+    // Gets a random position for the persons to apear on the area of interest
     Vector3 GetRandomPositionOnTerrainWithinRadius(TerrainData terrainData, float radius)
     {
         // center of the terrain
@@ -349,7 +353,7 @@ public class TerrainGenerator : MonoBehaviour
 
         Vector2 randomCircle = Random.insideUnitCircle * radius;
         float posX = center.x + randomCircle.x;
-        float posZ = center.z + randomCircle.y; // <-- FIX: use circle Y not a full-range Z
+        float posZ = center.z + randomCircle.y;
 
         Vector3 worldPos = new Vector3(posX, 0f, posZ);
 
@@ -357,6 +361,7 @@ public class TerrainGenerator : MonoBehaviour
         return new Vector3(posX, posY + 0.01f, posZ);
     }
 
+    // Gets a random position for the persons to apear on the area of interest
     Vector3 GetPositionWithinRadius(TerrainData terrainData, float radius, List<Vector3> placedPositions)
     {
         int maxTries = 30;
