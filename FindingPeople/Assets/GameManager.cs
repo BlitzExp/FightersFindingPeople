@@ -6,19 +6,26 @@ public class GameManager : MonoBehaviour
     private float xpos = 0f;
     private float ypos = 0f;
     private float zpos = 0f;
+    public int numDrones = 3;
 
     public int personsCount = 0;
     public int objectivesCount = 0;
 
+    [Header("Terrain cordinates")]
     [SerializeField] private TMP_InputField xInput; 
     [SerializeField] private TMP_InputField yInput;
     [SerializeField] private TMP_InputField zInput;
 
     [SerializeField] private GameObject startscreen;
+    [SerializeField] private GameObject descriptionscreen;
 
     [SerializeField] private GameObject refPoint;
 
     [SerializeField] private TerrainGenerator genrateTerrain;
+
+    [Header("Number of Drones")]
+    [SerializeField] TMP_InputField numberDrones;
+
 
     [Header("Gizmo Settings")]
     [SerializeField] private float radius = 25f;
@@ -67,6 +74,7 @@ public class GameManager : MonoBehaviour
         {
             zInput.text = zpos.ToString();
         }
+
     }
 
     //Returns a Vector3 with the position values for the center of the search radious
@@ -75,11 +83,37 @@ public class GameManager : MonoBehaviour
         return new Vector3(xpos, ypos, zpos);
     }
 
+    //Obtains the number of drones to spawn
+    public void SetNumDrones()
+    {
+        if (int.TryParse(numberDrones.text, out int result))
+        {
+            numDrones = result;
+            if (result < 3)
+            {
+                numDrones = 3;
+                numberDrones.text = numDrones.ToString();
+            }
+        }
+        else
+        {
+            numberDrones.text = numDrones.ToString();
+        }
+    }
+
+
     //Once the "Start Game" button is pressed, this function will hide the start screen and start the terrain generation
+    public void passDescriptions() 
+    { 
+        startscreen.SetActive(false);
+        descriptionscreen.SetActive(true);
+    }
+
     public void StartGame()
     {
         startscreen.SetActive(false);
         Debug.Log("Position: " + GetPosition());
+        Debug.Log("Number of Drones: " + numDrones);
         genrateTerrain.SetTerrainPosition(GetPosition());
         refPoint.transform.position = GetPosition();
         genrateTerrain.SetPersonsToSpawn(personsToSpawn);
