@@ -111,6 +111,7 @@ public class GameManager : MonoBehaviour
 
     public void StartGame()
     {
+        descriptionscreen.SetActive(false);
         startscreen.SetActive(false);
         Debug.Log("Position: " + GetPosition());
         Debug.Log("Number of Drones: " + numDrones);

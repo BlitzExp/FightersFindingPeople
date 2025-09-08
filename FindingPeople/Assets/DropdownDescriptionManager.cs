@@ -15,6 +15,8 @@ public class DropdownDescriptionManager : MonoBehaviour
 
     [SerializeField] private GameManager _gameManager;
 
+    [SerializeField] private List<string> SearchWords = new List<string>();
+
     private int lastNumDrones = -1;
     private List<(TMP_Dropdown dropdown, TMP_InputField inputField)> uiPairs
         = new List<(TMP_Dropdown, TMP_InputField)>();
@@ -92,6 +94,41 @@ public class DropdownDescriptionManager : MonoBehaviour
             });
 
             uiPairs.Add((newDropdown, newField));
+        }
+    }
+
+    public void ValidateDescriptions()
+    {
+        bool containsWord = false;
+        bool containsAllWords = false;
+        for (int i = 0; i < descripciones.Count; i++)
+        {
+            containsWord = false;
+            string desc = descripciones[i];
+            foreach (string word in SearchWords)
+            {
+                if (desc.Contains(word))
+                {
+                    containsWord = true;
+                }
+            }
+
+            if (!containsWord) 
+            {
+                Debug.Log($"No matching person in description {i + 1}");
+                containsAllWords = true;
+
+            }
+        }
+
+        if (containsAllWords == true)
+        {
+            Debug.Log("Create a matching description for each person");
+            return;
+        }
+        else 
+        {
+            _gameManager.StartGame();
         }
     }
 }
