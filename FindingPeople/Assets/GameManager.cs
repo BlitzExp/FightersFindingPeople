@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 using TMPro;
 
 public class GameManager : MonoBehaviour
@@ -7,9 +8,11 @@ public class GameManager : MonoBehaviour
     private float ypos = 0f;
     private float zpos = 0f;
     public int numDrones = 3;
+    public string description = "";
 
     public int personsCount = 0;
     public int objectivesCount = 0;
+    private int clper = 0;
 
     [Header("Terrain cordinates")]
     [SerializeField] private TMP_InputField xInput; 
@@ -18,6 +21,8 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private GameObject startscreen;
     [SerializeField] private GameObject descriptionscreen;
+    [SerializeField] private GameObject popupdesc;
+    [SerializeField] private TMP_Text closestperson;
 
     [SerializeField] private GameObject refPoint;
 
@@ -25,6 +30,9 @@ public class GameManager : MonoBehaviour
 
     [Header("Number of Drones")]
     [SerializeField] TMP_InputField numberDrones;
+
+    [Header("description")]
+    [SerializeField] TMP_InputField _Description;
 
 
     [Header("Gizmo Settings")]
@@ -101,8 +109,15 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    //Obtains the description for the search
+    public void SetDesc()
+    {
+        description = _Description.text.ToLower();
+        
+    }
 
-    //Once the "Start Game" button is pressed, this function will hide the start screen and start the terrain generation
+
+    //Once the "Start Game" button is pressed, this function will hide the start screen and start the terrain generation (this was done when we thought that there could be multiple persons of interest)
     public void passDescriptions() 
     { 
         startscreen.SetActive(false);
@@ -111,7 +126,7 @@ public class GameManager : MonoBehaviour
 
     public void StartGame()
     {
-        descriptionscreen.SetActive(false);
+        //descriptionscreen.SetActive(false);
         startscreen.SetActive(false);
         Debug.Log("Position: " + GetPosition());
         Debug.Log("Number of Drones: " + numDrones);
@@ -123,6 +138,75 @@ public class GameManager : MonoBehaviour
         _dronManager.targetPos = GetPosition();
         genrateTerrain.StartGeneration();
         Time.timeScale = 1f; 
+    }
+
+    public void searchForPersonDescription() 
+    {
+        int similar = 0;
+        int closestobj = -1;
+        bool containsallWord = false;
+
+        for (int i = 0; i < personsToSpawn.Length; i++)
+        {
+            int numberofcorrect = 0;
+            containsallWord = true;
+            List<string> personcaracteristicslist = personsToSpawn[i].prefab.GetComponent<caracteristicPerson>().Caracteristics;
+
+            //Checa si todas las palabras de person caracteristicslist están en description
+            bool containsWord = false;
+
+
+
+            foreach (string word in personcaracteristicslist)
+            {
+                if (description.Contains(word.ToLower()))
+                {
+                    numberofcorrect++;
+                    containsWord = true;
+                }
+                else
+                {
+                    containsWord = false;
+                    containsallWord = false;
+                }
+            }
+
+            if (containsallWord) 
+            {
+                Debug.Log("Matching person found: " + personsToSpawn[i].prefab.name);
+                personsToSpawn[i].isObjective = true;
+                personsToSpawn[i].prefab.GetComponent<caracteristicPerson>().isObj = true;
+                StartGame();
+                break;
+            }
+
+            if (numberofcorrect > similar)
+            {
+                similar = numberofcorrect;
+                closestobj = i;
+            }
+        }
+
+        popupdesc.SetActive(true);
+        if (closestobj != -1)
+        {
+            closestperson.text = "Closest match: " + personsToSpawn[closestobj].prefab.GetComponent<caracteristicPerson>().desc;
+            clper = closestobj;
+        }
+        else
+            Debug.Log("No person exist with that description");
+    }
+
+    public void closepopup()
+    {
+        popupdesc.SetActive(false);
+    }
+
+    public void spawnclosest()
+    {
+        personsToSpawn[clper].isObjective = true;
+        personsToSpawn[clper].prefab.GetComponent<caracteristicPerson>().isObj = true;
+        StartGame();
     }
 
     // Mark the search area in the scene view
