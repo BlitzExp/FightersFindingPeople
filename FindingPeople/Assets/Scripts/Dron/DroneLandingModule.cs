@@ -330,6 +330,17 @@ public class DroneLandingModule : MonoBehaviour
         }
 
         Vector2 toXZ = new Vector2(landingSpot.x - pos.x, landingSpot.z - pos.z);
+
+        // 🔹 NUEVA CONDICIÓN: si está a menos de 5 m de altura y dentro de 3 m en XZ, empieza a descender
+        float heightAboveGround = pos.y - SampleGroundY(pos, out _, out _);
+        if (heightAboveGround <= 5f && toXZ.magnitude <= 5f)
+        {
+            PrepControllerForDescent();
+            State = LandingState.Descending;
+            if (debug) Debug.Log($"{P}Within 5m height & 3m XZ → DESCEND");
+            return;
+        }
+
         if (toXZ.magnitude <= arriveThreshold)
         {
             PrepControllerForDescent();

@@ -117,4 +117,13 @@ public class BotMovement : MonoBehaviour
         Vector2 randomDir = Random.insideUnitCircle.normalized;
         return new Vector3(randomDir.x, 0, randomDir.y);
     }
+
+    public void stopMovement()
+    {
+        isMoving = false;
+        botAnim.SetBool("IsMoving", false);
+        botAnim.SetFloat("Speed", currentSpeed);
+        StopAllCoroutines();
+        this.enabled = false;
+    }
 }
