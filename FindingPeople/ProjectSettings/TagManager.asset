@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 3
   tags:
   - Person
+  - Dron
   layers:
   - Default
   - TransparentFX
@@ -12,8 +13,8 @@ TagManager:
   - Obstacle
   - Water
   - UI
-  - 
-  - 
+  - groundMask
+  - obstacleMask
   - 
   - 
   - 

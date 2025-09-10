@@ -44,6 +44,7 @@ public class GameManager : MonoBehaviour
 
     public personclass[] personsToSpawn;
     [SerializeField] private DronManager _dronManager;
+    [SerializeField] private DronesManager _dronesManager;
 
     //Obtains the value of the input for the X axis
     public void SetXPos() 
@@ -131,12 +132,19 @@ public class GameManager : MonoBehaviour
         Debug.Log("Position: " + GetPosition());
         Debug.Log("Number of Drones: " + numDrones);
         genrateTerrain.SetTerrainPosition(GetPosition());
+        DronesManager.centerpoint = GetPosition();
+        DronesManager.numDrones = numDrones;
+        _dronesManager.setTargetdescription(description);
         refPoint.transform.position = GetPosition();
         genrateTerrain.SetPersonsToSpawn(personsToSpawn);
         genrateTerrain.personsCount = personsCount;
         genrateTerrain.objectivesCount = objectivesCount;
-        _dronManager.targetPos = GetPosition();
         genrateTerrain.StartGeneration();
+        _dronesManager.createGrid();
+
+        //Hay que llamar a esto para cada dron
+        _dronManager.OnReachedTarget();
+
         Time.timeScale = 1f; 
     }
 
@@ -151,12 +159,7 @@ public class GameManager : MonoBehaviour
             int numberofcorrect = 0;
             containsallWord = true;
             List<string> personcaracteristicslist = personsToSpawn[i].prefab.GetComponent<caracteristicPerson>().Caracteristics;
-
-            //Checa si todas las palabras de person caracteristicslist están en description
             bool containsWord = false;
-
-
-
             foreach (string word in personcaracteristicslist)
             {
                 if (description.Contains(word.ToLower()))
@@ -205,6 +208,7 @@ public class GameManager : MonoBehaviour
     public void spawnclosest()
     {
         personsToSpawn[clper].isObjective = true;
+        description = personsToSpawn[clper].prefab.GetComponent<caracteristicPerson>().desc.ToLower();
         personsToSpawn[clper].prefab.GetComponent<caracteristicPerson>().isObj = true;
         StartGame();
     }

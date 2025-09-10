@@ -39,6 +39,11 @@ public class BotMovement : MonoBehaviour
         StartCoroutine(MovementRoutine());
     }
 
+    public Vector3 getcurrentpos() 
+    {
+        return rb.position;
+    }
+
 
     public void setCenterPoint(Transform point)
     {

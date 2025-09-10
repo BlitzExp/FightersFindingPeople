@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class DronManager : MonoBehaviour
 {
@@ -6,9 +7,21 @@ public class DronManager : MonoBehaviour
     private Vector3 lastTargetPos; 
 
     public DronHeight dronElevator; 
-    public DronMovement dronMovement; 
+    public DronMovement dronMovement;
+
+    [SerializeField] DronesManager DronesManager;
+    [SerializeField] DroneLandingModule DronLanding;
+
+    public int droneid;
 
     private bool movementStarted = false;
+
+    private bool isObjective = false;
+
+    public void setTaregt() 
+    {
+        isObjective = true;
+    }
 
     void Start()
     {
@@ -19,6 +32,8 @@ public class DronManager : MonoBehaviour
     void Update()
     {
         // Si targetPos cambió, inicia la elevación
+
+
         if (targetPos != lastTargetPos)
         {
             dronElevator.StartElevation();
@@ -38,6 +53,57 @@ public class DronManager : MonoBehaviour
     // Llamado por DronMovement cuando llega al destino
     public void OnReachedTarget()
     {
-        dronMovement.enabled = false; // Desactiva el movimiento
+        setTargetPos(DronesManager.getnewPositioninGrid(droneid, transform.position));
+    }
+
+    public void setTargetPos(Vector3 pos) 
+    {
+        lastTargetPos = targetPos; // Actualiza la referencia
+        targetPos = pos;
+    }
+
+    private void OnTriggerEnter(Collider collision)
+    {
+        if (collision.gameObject.CompareTag("Dron"))
+        {
+            Debug.Log("otro dron");
+            dronMovement.enabled = false;
+        }
+        else if (collision.gameObject.CompareTag("Person"))
+        {
+            List<string> personCharacteristics = collision.gameObject
+                .GetComponent<caracteristicPerson>().Caracteristics;
+
+            bool isTarget = true;
+            string description = DronesManager.targetdescription.ToLower();
+
+            foreach (string word in personCharacteristics)
+            {
+                if (!description.Contains(word.ToLower()))
+                {
+                    isTarget = false;
+                    break;
+                }
+            }
+
+            if (!isTarget)
+            {
+                return;
+            }
+
+            targetPos = collision.transform.position;
+            DronesManager.targetpos = targetPos;
+            setTaregt();
+            DronesManager.isTaregt = true;
+            DronesManager.objective = collision.gameObject.transform;
+            Debug.Log("Encontrada persona objetivo: " + collision.gameObject.name);
+        }
+    }
+
+    public void startLanding() 
+    {
+        DronLanding.enabled = true;
+        DronLanding.BeginLanding(DronesManager.objective);
+        dronMovement.enabled = false;
     }
 }

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class DronMovement : MonoBehaviour
 {
@@ -9,20 +9,50 @@ public class DronMovement : MonoBehaviour
     public float rotationSpeed = 2f;
     public float rotationThreshold = 1f;
 
-    // Makes the dron move towards the target position set in the DronManager script
+    private float resetDuration = 2f;
+    private float resetTimer = 0f;
+    private bool resettingRotation = false;
+
+    public bool isGoingToTarget = false;
+
     void Update()
     {
+        if (DronesManager.isTaregt) 
+        {
+            if (!isGoingToTarget) 
+            {
+                dronManager.setTargetPos(DronesManager.targetpos);
+            }
+            isGoingToTarget = true;
+        }
+
+        if (resettingRotation)
+        {
+            // Durante la fase de reseteo
+            resetTimer += Time.deltaTime;
+
+            Quaternion normalRotation = Quaternion.Euler(0, 0, 0);
+            transform.rotation = Quaternion.Slerp(transform.rotation, normalRotation, rotationSpeed * Time.deltaTime);
+
+            moveSpeed = 0f; // detener completamente el dron
+
+            if (resetTimer >= resetDuration)
+            {
+                resettingRotation = false; // volver al modo normal
+            }
+            return;
+        }
+
         Vector3 currentPos = transform.position;
         Vector3 target = new Vector3(dronManager.targetPos.x, currentPos.y, dronManager.targetPos.z);
         Vector3 direction = (target - currentPos).normalized;
 
         if (direction == Vector3.zero) return;
 
-        // Sets rotation towards the target
+        // Rotar hacia el target
         Quaternion targetRotation = Quaternion.LookRotation(direction);
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
 
-        
         float angleDifference = Quaternion.Angle(transform.rotation, targetRotation);
         if (angleDifference < rotationThreshold)
         {
@@ -30,12 +60,20 @@ public class DronMovement : MonoBehaviour
 
             if (Vector3.Distance(currentPos, target) > 0.1f)
             {
-                // Moves towards the target
+                // Mover hacia el target
                 transform.position = Vector3.MoveTowards(currentPos, target, moveSpeed * Time.deltaTime);
             }
             else
             {
+                // Llegó al target → activar fase de reset
+                resettingRotation = true;
+                resetTimer = 0f;
+                moveSpeed = 0f; // detener velocidad
                 dronManager.OnReachedTarget();
+                if (isGoingToTarget) 
+                {
+                    dronManager.startLanding();
+                }
             }
         }
     }
