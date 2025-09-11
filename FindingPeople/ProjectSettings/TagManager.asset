@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Person
   - Dron
+  - terrain
   layers:
   - Default
   - TransparentFX
@@ -15,8 +16,8 @@ TagManager:
   - UI
   - groundMask
   - obstacleMask
-  - 
-  - 
+  - droncoll
+  - dron
   - 
   - 
   - 

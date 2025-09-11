@@ -16,10 +16,10 @@ public class DroneLandingModule : MonoBehaviour
     public float stopHeightAboveGround = 0.08f;
     public float maxLandSlope = 20f;
     public float hoverAltitudeAboveGround = 2f;
-    public bool  maintainHoverOnApproach = true;
+    public bool maintainHoverOnApproach = true;
 
     // === Dynamic follow & lock ===
-    public bool  followMovingTarget = true;     // follow the ring while target moves
+    public bool followMovingTarget = true;     // follow the ring while target moves
     public float retargetInterval = 0.15f;      // how often to update spot from target
     public float minSpotShiftToApply = 0.25f;   // ignore tiny spot jitters
     public float lockWhenBelowHeight = 0.35f;   // lock the final spot when this close to ground hover height
@@ -30,13 +30,13 @@ public class DroneLandingModule : MonoBehaviour
 
     // === Trigger Sphere (avoidance bubble) ===
     public float obstacleDetectionRadius = 0.6f;     // world meters (visualized & synced)
-    public bool  considerTriggerCollidersAsObstacles = false; // if obstacles are triggers, enable
+    public bool considerTriggerCollidersAsObstacles = false; // if obstacles are triggers, enable
     public float replanCooldown = 0.25f;
-    public int   replanMaxTries = 16;
+    public int replanMaxTries = 16;
 
     // === Controller tuning ===
-    public bool  zeroStepOffsetOnDescend = true;
-    public bool  relaxSlopeLimitOnDescend = true;
+    public bool zeroStepOffsetOnDescend = true;
+    public bool relaxSlopeLimitOnDescend = true;
     public float extraGravity = 0f;
 
     public enum LandingState { Idle, ComputingSpot, Approaching, Descending, Landed, Aborted }
@@ -69,10 +69,10 @@ public class DroneLandingModule : MonoBehaviour
     // dynamic following
     float spotAngleRad;            // target→spot bearing we try to preserve
     float lastRetargetT;
-    bool  spotLocked;
+    bool spotLocked;
 
     readonly RaycastHit[] rayBuf = new RaycastHit[16];
-    readonly Collider[]   overlapBuf = new Collider[32];
+    readonly Collider[] overlapBuf = new Collider[32];
 
 
 
@@ -81,6 +81,7 @@ public class DroneLandingModule : MonoBehaviour
 
     public void BeginLanding(Transform landing)
     {
+        
         landingTarget = landing;
         if (landingTarget == null)
         {
@@ -121,7 +122,7 @@ public class DroneLandingModule : MonoBehaviour
                       $"  obstacleMask={MaskToString(obstacleMask)}\n" +
                       $"  worldRadius={obstacleDetectionRadius:F2}m");
             if (groundMask.value == ~0) Debug.LogWarning($"{P}groundMask=Everything (fix to Ground only).");
-            if (groundMask.value == 0)  Debug.LogWarning($"{P}groundMask=None (set to Ground).");
+            if (groundMask.value == 0) Debug.LogWarning($"{P}groundMask=None (set to Ground).");
         }
     }
 
@@ -199,7 +200,7 @@ public class DroneLandingModule : MonoBehaviour
 
     // ================= Trigger-based avoidance =================
     void OnTriggerEnter(Collider other) => TriggerEvent(other, "Enter");
-    void OnTriggerStay (Collider other) => TriggerEvent(other, "Stay");
+    void OnTriggerStay(Collider other) => TriggerEvent(other, "Stay");
 
     void TriggerEvent(Collider other, string phase)
     {
@@ -231,7 +232,7 @@ public class DroneLandingModule : MonoBehaviour
 
         // ignore self & target
         if (tr.root == transform.root || tr.IsChildOf(transform)) { why = "self"; return false; }
-        if (target && (tr == target || tr.IsChildOf(target)))     { why = "target"; return false; }
+        if (target && (tr == target || tr.IsChildOf(target))) { why = "target"; return false; }
 
         int layer = c.gameObject.layer;
 
@@ -282,7 +283,7 @@ public class DroneLandingModule : MonoBehaviour
 
         // If bearing is invalid (blocked), try a quick local search around current angle
         float bestAngle = spotAngleRad;
-        bool  found = false;
+        bool found = false;
         const int localTries = 8;
         for (int i = 1; i <= localTries; i++)
         {
@@ -325,7 +326,7 @@ public class DroneLandingModule : MonoBehaviour
         {
             float groundY = SampleGroundY(targetXZ, out _, out _);
             float desiredY = groundY + hoverAltitudeAboveGround;
-            cc.Move(new Vector3(0f, Mathf.Lerp(pos.y, desiredY, 10f * Time.deltaTime) - pos.y, 0f));
+            cc.Move(new Vector3(0f, Mathf.Lerp(pos.y, desiredY, descendSpeed * Time.deltaTime) - pos.y, 0f));
             pos = transform.position;
         }
 
@@ -391,7 +392,7 @@ public class DroneLandingModule : MonoBehaviour
         if (Mathf.Abs(yNow - lastY) > 0.005f) { lastY = yNow; lastProgressT = Time.time; }
         else if (Time.time - lastProgressT > 0.75f)
         {
-            cc.Move(new Vector3(0f, -Mathf.Max(0.05f, descendSpeed * 0.25f), 0f));
+            cc.Move(new Vector3(0f, -Mathf.Max(0.05f, descendSpeed * 0.1f), 0f));
             lastProgressT = Time.time;
         }
 

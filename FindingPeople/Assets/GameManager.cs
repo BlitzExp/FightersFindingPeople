@@ -12,7 +12,7 @@ public class GameManager : MonoBehaviour
 
     public int personsCount = 0;
     public int objectivesCount = 0;
-    private int clper = 0;
+    private int clper = -1;
 
     [Header("Terrain cordinates")]
     [SerializeField] private TMP_InputField xInput; 
@@ -207,6 +207,7 @@ public class GameManager : MonoBehaviour
 
     public void spawnclosest()
     {
+        if (clper < 0 || clper >= personsToSpawn.Length) return;
         personsToSpawn[clper].isObjective = true;
         description = personsToSpawn[clper].prefab.GetComponent<caracteristicPerson>().desc.ToLower();
         personsToSpawn[clper].prefab.GetComponent<caracteristicPerson>().isObj = true;
