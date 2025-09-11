@@ -17,14 +17,20 @@ public class BotMovement : MonoBehaviour
     [Header("Terrain")]
     public Terrain terrain;
 
-    //Animation and Rigidbody
+    // Anti-stuck
+    [Header("Anti-Stuck")]
+    public float stuckCheckInterval = 2f;   // cada cuánto revisar si se quedó trabado
+    public float stuckDistanceThreshold = 0.5f; // si no se movió más que esto en el intervalo, se considera "stuck"
+
     private Animator botAnim;
     private Rigidbody rb;
     private Vector3 moveDirection;
     private bool isMoving = false;
     private float currentSpeed;
 
-    // Initialize components and constraints
+    private Vector3 lastPosition;
+    private float lastStuckCheckTime;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
@@ -32,49 +38,74 @@ public class BotMovement : MonoBehaviour
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
     }
 
-
-    //After initializing the character, start the movement routine
     private void Start()
     {
+        lastPosition = rb.position;
+        lastStuckCheckTime = Time.time;
         StartCoroutine(MovementRoutine());
     }
 
+    public Vector3 getcurrentpos()
+    {
+        return rb.position;
+    }
 
     public void setCenterPoint(Transform point)
     {
         centerPoint = point;
     }
 
-
-    // Makes the movement and rotation of the caracter posible in the terrain environment throught the use of Rigidbody. Also makes sure the character is on the desired radious
     private void FixedUpdate()
     {
-        if (terrain == null) return; // no terrain -> don't move vertically
+        if (terrain == null) return;
 
         if (isMoving)
         {
             Vector3 newPos = rb.position + moveDirection * currentSpeed * Time.fixedDeltaTime;
 
+            // Mantener dentro del radio
             if (centerPoint != null && Vector3.Distance(centerPoint.position, newPos) > movementRadius)
             {
                 moveDirection = (centerPoint.position - rb.position).normalized;
                 newPos = rb.position + moveDirection * currentSpeed * Time.fixedDeltaTime;
             }
 
+            // Ajustar altura al terreno
             float terrainHeight = terrain.SampleHeight(newPos);
             Vector3 terrainPos = new Vector3(newPos.x, terrainHeight, newPos.z);
 
             rb.MovePosition(terrainPos);
 
+            // Rotación hacia la dirección de movimiento
             if (moveDirection != Vector3.zero)
             {
                 Quaternion targetRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
                 rb.rotation = Quaternion.Lerp(rb.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
             }
         }
+
+        // === Anti-stuck check ===
+        if (Time.time - lastStuckCheckTime > stuckCheckInterval)
+        {
+            float distanceMoved = Vector3.Distance(rb.position, lastPosition);
+
+            if (isMoving && distanceMoved < stuckDistanceThreshold)
+            {
+                // Consideramos que está trabado → forzar nueva dirección
+                moveDirection = GetRandomDirection();
+                currentSpeed = Random.Range(speedRange.x, speedRange.y);
+                if (botAnim != null)
+                {
+                    botAnim.SetBool("IsMoving", true);
+                    botAnim.SetFloat("Speed", currentSpeed);
+                }
+            }
+
+            lastPosition = rb.position;
+            lastStuckCheckTime = Time.time;
+        }
     }
 
-    // The caracter routine, it moves and stops in random intervals and directions
     private IEnumerator MovementRoutine()
     {
         while (true)
@@ -106,10 +137,21 @@ public class BotMovement : MonoBehaviour
         }
     }
 
-    // Generates a random direction on the XZ plane
     private Vector3 GetRandomDirection()
     {
         Vector2 randomDir = Random.insideUnitCircle.normalized;
         return new Vector3(randomDir.x, 0, randomDir.y);
+    }
+
+    public void stopMovement()
+    {
+        isMoving = false;
+        if (botAnim != null)
+        {
+            botAnim.SetBool("IsMoving", false);
+            botAnim.SetFloat("Speed", currentSpeed);
+        }
+        StopAllCoroutines();
+        this.enabled = false;
     }
 }
