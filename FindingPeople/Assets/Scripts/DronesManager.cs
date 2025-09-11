@@ -22,6 +22,8 @@ public class DronesManager : MonoBehaviour
 
     public static Transform objective;
 
+    [SerializeField] private GameObject Dron;
+
     public void setTargetdescription(string desc)
     {
         targetdescription = desc;
@@ -175,6 +177,19 @@ public class DronesManager : MonoBehaviour
 
             Gizmos.color = c; // color fuerte para el borde
             Gizmos.DrawWireCube(center, size);
+        }
+    }
+
+    public void spawnDrones() 
+    {
+        for (int i = 0; i < numDrones; i++)
+        {
+            Vector3 spawnPos =new Vector3(i * 2f, 17.346f, 0f); // Separados 5m en X
+            GameObject dronInstance = Instantiate(Dron, spawnPos, Quaternion.identity);
+            dronInstance.name = $"Dron_{i}";
+            dronInstance.GetComponent<DronManager>().droneid = i;
+            dronInstance.GetComponent<DronManager>().HelpStart();
+            dronInstance.GetComponent<DronManager>().OnReachedTarget();
         }
     }
 

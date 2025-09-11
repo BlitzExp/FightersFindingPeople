@@ -4332,6 +4332,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c99447eafca1f72478c38253a647e0da, type: 3}
       insertIndex: -1
       addedObject: {fileID: 960588363}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c99447eafca1f72478c38253a647e0da, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 960588364}
     - targetCorrespondingSourceObject: {fileID: -5151492872390713093, guid: c99447eafca1f72478c38253a647e0da, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1548067894}
@@ -4459,6 +4462,19 @@ MonoBehaviour:
   - suit
   isObj: 0
   desc: A male person using a suit
+--- !u!114 &960588364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 960588357}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2bb861783ba52d041b2a06a80718ccb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  botmov: {fileID: 960588361}
 --- !u!1 &977843531 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: fd09c2cbae832d245a9138b98f082c67, type: 3}
@@ -4692,6 +4708,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 51649d978b80fc049aa95d7682940b17, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2055818757}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 51649d978b80fc049aa95d7682940b17, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2055818759}
     - targetCorrespondingSourceObject: {fileID: -5151492872390713093, guid: 51649d978b80fc049aa95d7682940b17, type: 3}
       insertIndex: -1
       addedObject: {fileID: 912090833}
@@ -5459,6 +5478,38 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1123828141}
   m_CullTransparentMesh: 1
+--- !u!1 &1169829903
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1169829904}
+  m_Layer: 0
+  m_Name: Dron
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &1169829904
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1169829903}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 162.86485, y: -140.26933, z: 296.68988}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 543450652360797551}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1174743912
 GameObject:
   m_ObjectHideFlags: 0
@@ -6351,19 +6402,19 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 0}
+    m_TransformParent: {fileID: 1169829904}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -162.86485
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 12.5
+      value: 152.76933
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -296.68988
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
       propertyPath: m_LocalRotation.w
@@ -6371,15 +6422,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -6400,6 +6451,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
       propertyPath: m_Layer
       value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: b23fcdf6fecd33e44925d390d01c6c84, type: 3}
       propertyPath: m_TagString
@@ -8937,6 +8992,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d936046aa83e58f42af80ef00d8c68c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Dron: {fileID: 919132148355250133}
 --- !u!1001 &1883716208
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9683,7 +9739,6 @@ GameObject:
   m_Component:
   - component: {fileID: 2053116148}
   - component: {fileID: 2053116147}
-  - component: {fileID: 2053116146}
   - component: {fileID: 2053116145}
   m_Layer: 0
   m_Name: Main Camera
@@ -9736,14 +9791,6 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
---- !u!81 &2053116146
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2053116143}
-  m_Enabled: 1
 --- !u!20 &2053116147
 Camera:
   m_ObjectHideFlags: 0
@@ -9920,6 +9967,19 @@ MonoBehaviour:
   - suit
   isObj: 0
   desc: A woman in suit
+--- !u!114 &2055818759
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2055818749}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2bb861783ba52d041b2a06a80718ccb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  botmov: {fileID: 2055818752}
 --- !u!1 &2059937793
 GameObject:
   m_ObjectHideFlags: 0
@@ -14595,7 +14655,7 @@ SceneRoots:
   - {fileID: 1705149161}
   - {fileID: 2011059062}
   - {fileID: 1611667109}
-  - {fileID: 1347816068}
+  - {fileID: 1169829904}
   - {fileID: 866143142}
   - {fileID: 1883716208}
   - {fileID: 1830302437}

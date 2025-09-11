@@ -134,6 +134,7 @@ public class GameManager : MonoBehaviour
         genrateTerrain.SetTerrainPosition(GetPosition());
         DronesManager.centerpoint = GetPosition();
         DronesManager.numDrones = numDrones;
+        
         _dronesManager.setTargetdescription(description);
         refPoint.transform.position = GetPosition();
         genrateTerrain.SetPersonsToSpawn(personsToSpawn);
@@ -143,7 +144,7 @@ public class GameManager : MonoBehaviour
         _dronesManager.createGrid();
 
         //Hay que llamar a esto para cada dron
-        _dronManager.OnReachedTarget();
+        _dronesManager.spawnDrones();
 
         Time.timeScale = 1f; 
     }

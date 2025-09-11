@@ -29,7 +29,7 @@ public class DronManager : MonoBehaviour
         isObjective = true;
     }
 
-    void Start()
+    public void HelpStart()
     {
         lastTargetPos = targetPos; 
         dronMovement.enabled = false;   
@@ -73,7 +73,6 @@ public class DronManager : MonoBehaviour
         if (collision.gameObject.CompareTag("Dron"))
         {
             Debug.Log("otro dron");
-            dronMovement.enabled = false;
         }
         else if (collision.gameObject.CompareTag("Person"))
         {
