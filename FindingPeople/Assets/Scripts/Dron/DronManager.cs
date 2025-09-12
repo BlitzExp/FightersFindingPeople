@@ -19,6 +19,8 @@ public class DronManager : MonoBehaviour
     [SerializeField] Transform landingpos;
     [SerializeField] GameObject Camera;
 
+    [SerializeField] Animator wingsmov;
+
     public int droneid;
 
     private bool movementStarted = false;
@@ -131,6 +133,6 @@ public class DronManager : MonoBehaviour
         //Pon la grabedad a 9.81
         rb.isKinematic = false;
         rb.angularDamping = 30f;
-
+        wingsmov.SetBool("Active", false);
     }
 }
