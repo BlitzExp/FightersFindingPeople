@@ -10,7 +10,7 @@ public class stopMovement : MonoBehaviour
             Vector3 position = collision.transform.position;
             float distance = Vector3.Distance(transform.position, position);
 
-            if (distance <= 2f && position.y < 15f)
+            if (distance <= 3f)
             {
                 botmov.stopMovement();
                 this.enabled = false;

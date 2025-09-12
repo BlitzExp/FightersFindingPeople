@@ -16,6 +16,8 @@ public class DronManager : MonoBehaviour
     [SerializeField] Rigidbody rb;
     [SerializeField] BoxCollider box;
     [SerializeField] SphereCollider sphere;
+    [SerializeField] Transform landingpos;
+    [SerializeField] GameObject Camera;
 
     public int droneid;
 
@@ -112,6 +114,8 @@ public class DronManager : MonoBehaviour
         characterController.enabled = true;
         DronLanding.BeginLanding(DronesManager.objective);
         dronLandingStoper.enabled = true;
+        Camera.transform.position = landingpos.position;
+        Camera.GetComponent<Camera>().fieldOfView = 60f;
     }
 
     public void stopLanding()

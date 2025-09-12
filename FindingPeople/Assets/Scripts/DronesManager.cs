@@ -23,6 +23,9 @@ public class DronesManager : MonoBehaviour
     public static Transform objective;
 
     [SerializeField] private GameObject Dron;
+    [SerializeField] private CamaraManager _CamaraManager;
+
+    [SerializeField] private GameObject Camara;
 
     public void setTargetdescription(string desc)
     {
@@ -190,6 +193,9 @@ public class DronesManager : MonoBehaviour
             dronInstance.GetComponent<DronManager>().droneid = i;
             dronInstance.GetComponent<DronManager>().HelpStart();
             dronInstance.GetComponent<DronManager>().OnReachedTarget();
+            Camara.SetActive(false);
+            Canvas.ForceUpdateCanvases();
+            _CamaraManager.SetUpCameras();
         }
     }
 
