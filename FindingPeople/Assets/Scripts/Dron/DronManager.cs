@@ -134,5 +134,6 @@ public class DronManager : MonoBehaviour
         rb.isKinematic = false;
         rb.angularDamping = 30f;
         wingsmov.SetBool("Active", false);
+        wingsmov.enabled = false;
     }
 }

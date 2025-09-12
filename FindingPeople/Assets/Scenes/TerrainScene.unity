@@ -1150,7 +1150,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   numDrones: 3
   description: 
-  personsCount: 15
+  personsCount: 10
   objectivesCount: 1
   xInput: {fileID: 1649867450}
   yInput: {fileID: 1103585695}
