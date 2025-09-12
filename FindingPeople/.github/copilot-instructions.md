@@ -2,7 +2,7 @@
 - Project name: FindingPeople
 - Unity version: Unity 6000.0.44f1
 - Active game object:
-  - Name: DronesManager
-  - Tag: Untagged
-  - Layer: Default
+  - Name: Terrain
+  - Tag: terrain
+  - Layer: groundMask
 <!-- UNITY CODE ASSIST INSTRUCTIONS END -->
