@@ -1,11 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
+
+// Class in charge of managing the cameras of the drones and assigning them to different displays
 public class CamaraManager : MonoBehaviour
 {
-    private int currentDisplay = 0; // Display actual
+    private int currentDisplay = 0; 
     private List<Camera> cams = new List<Camera>();
-    private List<Camera> fillerCams = new List<Camera>(); // Cámaras negras extra
+    private List<Camera> fillerCams = new List<Camera>(); 
 
     void Update()
     {
@@ -20,6 +22,7 @@ public class CamaraManager : MonoBehaviour
         }
     }
 
+    // Obtains all the camaras from the drones in the scene
     public void SetUpCameras()
     {
         cams.Clear();
@@ -32,6 +35,8 @@ public class CamaraManager : MonoBehaviour
 
         SetupDroneCameras(cams, currentDisplay);
     }
+
+    // Divides the game view in 4 parts and assigns the cameras to each part
 
     public void SetupDroneCameras(List<Camera> droneCameras, int displayId)
     {
@@ -59,19 +64,18 @@ public class CamaraManager : MonoBehaviour
             }
             else
             {
-                // Ocultar cámaras que no tocan en este display
                 cam.rect = new Rect(0, 0, 0, 0);
             }
         }
 
-        // 🔹 Agregar cámaras negras si hay menos de 4 en este display
+
         while (camsOnCurrentDisplay < maxPerDisplay)
         {
             GameObject filler = new GameObject($"FillerCam_{camsOnCurrentDisplay}");
             Camera fillerCam = filler.AddComponent<Camera>();
             fillerCam.clearFlags = CameraClearFlags.SolidColor;
             fillerCam.backgroundColor = Color.black;
-            fillerCam.cullingMask = 0; // No renderiza nada
+            fillerCam.cullingMask = 0; 
             fillerCam.targetDisplay = displayId;
 
             int camIndex = camsOnCurrentDisplay;
@@ -83,7 +87,6 @@ public class CamaraManager : MonoBehaviour
             camsOnCurrentDisplay++;
         }
 
-        // Activar el display actual si existe
         if (Display.displays.Length > displayId)
         {
             Display.displays[displayId].Activate();

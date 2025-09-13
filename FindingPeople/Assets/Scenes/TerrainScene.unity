@@ -1150,7 +1150,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   numDrones: 3
   description: 
-  personsCount: 10
+  personsCount: 30
   objectivesCount: 1
   xInput: {fileID: 1649867450}
   yInput: {fileID: 1103585695}
@@ -1187,7 +1187,9 @@ MonoBehaviour:
     isObjective: 0
   - prefab: {fileID: 919132149237145191}
     isObjective: 0
-  - prefab: {fileID: 919132147529951582}
+  - prefab: {fileID: 919132147609128208}
+    isObjective: 0
+  - prefab: {fileID: 919132148878381727}
     isObjective: 0
   _dronManager: {fileID: 1184416702}
   _dronesManager: {fileID: 1880932941}

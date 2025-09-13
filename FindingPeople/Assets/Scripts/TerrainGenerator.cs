@@ -31,7 +31,7 @@ public class TerrainGenerator : MonoBehaviour
     public int objectivesCount = 0;
 
     [Header("Persons Spawn Settings")]
-    public float personMinDistance = 5f; // distancia mínima entre personas
+    public float personMinDistance = 5f; 
 
     [SerializeField] public TerrainCollider terrainCol;
 
@@ -43,7 +43,7 @@ public class TerrainGenerator : MonoBehaviour
             terrainCol = GetComponent<TerrainCollider>();
     }
 
-    // Set the posiciont value form the GameManager script
+    // Set the position value form the GameManager script
     public void SetTerrainPosition(Vector3 pos)
     {
         terrainPosition = pos;
@@ -313,7 +313,6 @@ public class TerrainGenerator : MonoBehaviour
             }
         }
 
-        // spawn non-objective persons
         int attempts = 0;
         while (spawnedPersons < personsCount && attempts < personsCount * 20)
         {

@@ -1,5 +1,7 @@
 using UnityEngine;
- public class DronHeight : MonoBehaviour
+
+// Sub Agent in charge of making the drone reach a certain height at the start
+public class DronHeight : MonoBehaviour
  {
     public float targetHeight = 120f; 
     public float speed = 0;

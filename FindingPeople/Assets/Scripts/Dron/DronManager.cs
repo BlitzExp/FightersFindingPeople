@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+
+// Agent in acharge of controlling all the subagents and deciding which one goes to each point
 public class DronManager : MonoBehaviour
 {
     public Vector3 targetPos = Vector3.zero; 
@@ -9,6 +11,7 @@ public class DronManager : MonoBehaviour
     public DronHeight dronElevator; 
     public DronMovement dronMovement;
 
+    // References to other components, objects and subagents
     [SerializeField] DronesManager DronesManager;
     [SerializeField] DroneLandingModule DronLanding;
     [SerializeField] DronLanding dronLandingStoper;
@@ -28,31 +31,34 @@ public class DronManager : MonoBehaviour
     private bool isObjective = false;
 
     private bool isFinish = false;
+
+    // Function which informs that the person of interest has been found
     public void setTaregt() 
     {
         isObjective = true;
     }
 
+    // Function called at the start of the simulation
     public void HelpStart()
     {
         lastTargetPos = targetPos; 
         dronMovement.enabled = false;   
     }
 
+    // Function which decides when to start the horizontal movement
     void Update()
     {
-        // Si targetPos cambió, inicia la elevación
 
-
+        // Starts elevation agent
         if (targetPos != lastTargetPos && !isFinish)
         {
             dronElevator.StartElevation();
             dronMovement.enabled = false;
             movementStarted = false;
-            lastTargetPos = targetPos; // Actualizamos la referencia
+            lastTargetPos = targetPos;
         }
 
-        // Cuando alcanza los 120m y aún no ha empezado a moverse
+        // Starts movement agent
         if (dronElevator.reachedHeight && !movementStarted && !isFinish)
         {
             dronMovement.enabled = true; // Activa el movimiento horizontal
@@ -60,18 +66,21 @@ public class DronManager : MonoBehaviour
         }
     }
 
-    // Llamado por DronMovement cuando llega al destino
+    // Function to inform that the drone has reached its target position or the person of interest
     public void OnReachedTarget()
     {
         setTargetPos(DronesManager.getnewPositioninGrid(droneid, transform.position));
     }
 
+    // Function for updating the target position
     public void setTargetPos(Vector3 pos) 
     {
-        lastTargetPos = targetPos; // Actualiza la referencia
+        lastTargetPos = targetPos; 
         targetPos = pos;
     }
 
+    // Function which acts like the detection agent which is a trigger collider of the field of view of the drone
+    // This functions also checks if the person found is the person of interest or not
     private void OnTriggerEnter(Collider collision)
     {
         if (collision.gameObject.CompareTag("Dron"))
@@ -105,10 +114,12 @@ public class DronManager : MonoBehaviour
             setTaregt();
             DronesManager.isTaregt = true;
             DronesManager.objective = collision.gameObject.transform;
-            Debug.Log("Encontrada persona objetivo: " + collision.gameObject.name);
+            Debug.Log("Person of interest found:  " + collision.gameObject.name);
         }
     }
 
+
+    // Starts the landing agent
     public void startLanding() 
     {
         DronLanding.enabled = true;
@@ -116,10 +127,13 @@ public class DronManager : MonoBehaviour
         characterController.enabled = true;
         DronLanding.BeginLanding(DronesManager.objective);
         dronLandingStoper.enabled = true;
+
+        // Moves the camara to give a betetr prespective of the scene
         Camera.transform.position = landingpos.position;
         Camera.GetComponent<Camera>().fieldOfView = 60f;
     }
 
+    // Function which stops all the agents and components of the drone when it has landed
     public void stopLanding()
     {
         DronLanding.enabled = false;
@@ -130,7 +144,6 @@ public class DronManager : MonoBehaviour
         isFinish = true;
         rb.useGravity = true;
         dronLandingStoper.enabled = false; 
-        //Pon la grabedad a 9.81
         rb.isKinematic = false;
         rb.angularDamping = 30f;
         wingsmov.SetBool("Active", false);
