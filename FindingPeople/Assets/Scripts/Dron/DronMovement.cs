@@ -1,5 +1,6 @@
 ﻿﻿using UnityEngine;
 
+//Function for moving the drone in 2 dimensions
 public class DronMovement : MonoBehaviour
 {
     public DronManager dronManager;
@@ -17,6 +18,7 @@ public class DronMovement : MonoBehaviour
 
     void Update()
     {
+        // In case the drone is going to the target person, it changes the objective if the person is found by other agent
         if (DronesManager.isTaregt) 
         {
             if (!isGoingToTarget) 
@@ -26,19 +28,19 @@ public class DronMovement : MonoBehaviour
             isGoingToTarget = true;
         }
 
+        // When it reaches the position of the grid it resets the rotation to cover the whole detection area
         if (resettingRotation)
         {
-            // Durante la fase de reseteo
             resetTimer += Time.deltaTime;
 
             Quaternion normalRotation = Quaternion.Euler(0, 0, 0);
             transform.rotation = Quaternion.Slerp(transform.rotation, normalRotation, rotationSpeed * Time.deltaTime);
 
-            moveSpeed = 0f; // detener completamente el dron
+            moveSpeed = 0f;
 
             if (resetTimer >= resetDuration)
             {
-                resettingRotation = false; // volver al modo normal
+                resettingRotation = false;
             }
             return;
         }
@@ -49,27 +51,31 @@ public class DronMovement : MonoBehaviour
 
         if (direction == Vector3.zero) return;
 
-        // Rotar hacia el target
+        // Rotates toward the target
         Quaternion targetRotation = Quaternion.LookRotation(direction);
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
 
         float angleDifference = Quaternion.Angle(transform.rotation, targetRotation);
+
+        // If the angle difference is small enough, it starts moving toward the target
         if (angleDifference < rotationThreshold)
         {
             moveSpeed = Mathf.Min(maxSpeed, moveSpeed + acceleration * Time.deltaTime);
 
             if (Vector3.Distance(currentPos, target) > 0.1f)
             {
-                // Mover hacia el target
+                // Moves towards the target
                 transform.position = Vector3.MoveTowards(currentPos, target, moveSpeed * Time.deltaTime);
             }
             else
             {
-                // Llegó al target → activar fase de reset
+                // Once it reach it it resets
                 resettingRotation = true;
                 resetTimer = 0f;
-                moveSpeed = 0f; // detener velocidad
+                moveSpeed = 0f; 
                 dronManager.OnReachedTarget();
+
+                //In case it reaches the objective person
                 if (isGoingToTarget) 
                 {
                     dronManager.startLanding();

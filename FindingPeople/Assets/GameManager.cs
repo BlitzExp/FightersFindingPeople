@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
 
+//Class for initializing the simulation and recovering the user inputs
 public class GameManager : MonoBehaviour
 {
     private float xpos = 0f;
@@ -117,30 +118,35 @@ public class GameManager : MonoBehaviour
         
     }
 
-
-    //Once the "Start Game" button is pressed, this function will hide the start screen and start the terrain generation (this was done when we thought that there could be multiple persons of interest)
-    public void passDescriptions() 
-    { 
-        startscreen.SetActive(false);
-        descriptionscreen.SetActive(true);
-    }
-
+    //Function for starting the game after the star button is pressed
     public void StartGame()
     {
-        //descriptionscreen.SetActive(false);
+        // Deativate the start screen UI
         startscreen.SetActive(false);
+
+        // Mesajes for showing the recollected information
         Debug.Log("Position: " + GetPosition());
         Debug.Log("Number of Drones: " + numDrones);
+
+       
         genrateTerrain.SetTerrainPosition(GetPosition());
+
+        // Pass information to the DronesManager which will handle the all the drones
         DronesManager.centerpoint = GetPosition();
         DronesManager.numDrones = numDrones;
-        
         _dronesManager.setTargetdescription(description);
+
         refPoint.transform.position = GetPosition();
+
+        // Pass information for the generation of the persons in the scene
         genrateTerrain.SetPersonsToSpawn(personsToSpawn);
         genrateTerrain.personsCount = personsCount;
         genrateTerrain.objectivesCount = objectivesCount;
+
+        // Acrivates the procedural genration of the terrain
         genrateTerrain.StartGeneration();
+
+        // Creates the grid for all the drones
         _dronesManager.createGrid();
 
         //Hay que llamar a esto para cada dron
@@ -149,6 +155,8 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f; 
     }
 
+
+    //Function for intrepreting the user description and checking with the existing persons description for the closest match
     public void searchForPersonDescription() 
     {
         int similar = 0;
@@ -177,7 +185,6 @@ public class GameManager : MonoBehaviour
 
             if (containsallWord) 
             {
-                Debug.Log("Matching person found: " + personsToSpawn[i].prefab.name);
                 personsToSpawn[i].isObjective = true;
                 personsToSpawn[i].prefab.GetComponent<caracteristicPerson>().isObj = true;
                 StartGame();
@@ -201,11 +208,14 @@ public class GameManager : MonoBehaviour
             Debug.Log("No person exist with that description");
     }
 
+
+    // Function in case the user does not want the closest match 
     public void closepopup()
     {
         popupdesc.SetActive(false);
     }
 
+    // Function for spawning the closest match
     public void spawnclosest()
     {
         if (clper < 0 || clper >= personsToSpawn.Length) return;
@@ -215,7 +225,7 @@ public class GameManager : MonoBehaviour
         StartGame();
     }
 
-    // Mark the search area in the scene view
+    // Makes the gizmos for the search area visible in the scene
     private void OnDrawGizmos()
     {
         if (refPoint == null) return;

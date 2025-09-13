@@ -30,6 +30,9 @@ public class TerrainGenerator : MonoBehaviour
     public int personsCount = 0;
     public int objectivesCount = 0;
 
+    [Header("Persons Spawn Settings")]
+    public float personMinDistance = 5f; 
+
     [SerializeField] public TerrainCollider terrainCol;
 
     // Reference to the Terrain component
@@ -40,7 +43,7 @@ public class TerrainGenerator : MonoBehaviour
             terrainCol = GetComponent<TerrainCollider>();
     }
 
-    // Set the posiciont value form the GameManager script
+    // Set the position value form the GameManager script
     public void SetTerrainPosition(Vector3 pos)
     {
         terrainPosition = pos;
@@ -52,7 +55,7 @@ public class TerrainGenerator : MonoBehaviour
         personsToSpawn = persons;
     }
 
-    //Starts the terrain generation after all the values aere obtained
+    //Starts the terrain generation after all the values are obtained
     public void StartGeneration()
     {
         // Generates a random terrain seed
@@ -179,8 +182,6 @@ public class TerrainGenerator : MonoBehaviour
                 for (int i = 0; i < numTextures; i++) total += textureMix[i];
                 if (total == 0f) textureMix[0] = 1f;
 
-                for (int i = 0; i < numTextures; i++) textureMix[i] /= total;
-
                 for (int i = 0; i < numTextures; i++)
                 {
                     alphamaps[x, y, i] = textureMix[i];
@@ -207,7 +208,7 @@ public class TerrainGenerator : MonoBehaviour
         return 4097;
     }
 
-    //Spawns objects like trees and rocks on the terrain, this makes sure they do not ovelap and applies some randomnes to the objects
+    // Spawns objects like trees and rocks on the terrain
     void SpawnObjects(TerrainData terrainData)
     {
         foreach (var obj in spawnableObjects)
@@ -274,7 +275,7 @@ public class TerrainGenerator : MonoBehaviour
         }
     }
 
-    // Spawns persons on the terrain, ensuring objectives are placed first and spacing is maintained
+    // Spawns persons on the terrain
     void SpawnPersons(TerrainData terrainData)
     {
         if (personsToSpawn == null || personsToSpawn.Length == 0)
@@ -303,7 +304,7 @@ public class TerrainGenerator : MonoBehaviour
                 if (col != null)
                 {
                     float halfHeight = col.bounds.extents.y;
-                    spawnedPerson.transform.position += Vector3.up * (halfHeight + 0.01f); 
+                    spawnedPerson.transform.position += Vector3.up * (halfHeight + 0.01f);
                 }
 
                 placedPositions.Add(spawnPos);
@@ -312,7 +313,6 @@ public class TerrainGenerator : MonoBehaviour
             }
         }
 
-        // spawn non-objective persons
         int attempts = 0;
         while (spawnedPersons < personsCount && attempts < personsCount * 20)
         {
@@ -344,7 +344,7 @@ public class TerrainGenerator : MonoBehaviour
         Debug.Log($"Spawned {spawnedPersons} persons. Objectives: {objectivesCount}");
     }
 
-    // Gets a random position for the persons to apear on the area of interest
+    // Gets a random position within radius
     Vector3 GetRandomPositionOnTerrainWithinRadius(TerrainData terrainData, float radius)
     {
         // center of the terrain
@@ -361,11 +361,10 @@ public class TerrainGenerator : MonoBehaviour
         return new Vector3(posX, posY + 0.01f, posZ);
     }
 
-    // Gets a random position for the persons to apear on the area of interest
+    // Ensures separation between persons
     Vector3 GetPositionWithinRadius(TerrainData terrainData, float radius, List<Vector3> placedPositions)
     {
-        int maxTries = 30;
-        float minDistance = 2f;
+        int maxTries = 50;
 
         for (int i = 0; i < maxTries; i++)
         {
@@ -374,7 +373,7 @@ public class TerrainGenerator : MonoBehaviour
             bool tooClose = false;
             foreach (var placed in placedPositions)
             {
-                if (Vector3.Distance(candidate, placed) < minDistance)
+                if (Vector3.Distance(candidate, placed) < personMinDistance)
                 {
                     tooClose = true;
                     break;
@@ -385,6 +384,7 @@ public class TerrainGenerator : MonoBehaviour
                 return candidate;
         }
 
+        // fallback
         return GetRandomPositionOnTerrainWithinRadius(terrainData, radius);
     }
 }

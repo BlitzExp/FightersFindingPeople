@@ -79,13 +79,14 @@ public class DroneLandingModule : MonoBehaviour
     public Transform landingTarget;
     public float landingRadius = 3f;
 
+
+    // Entry point for the landing agent
     public void BeginLanding(Transform landing)
     {
         
         landingTarget = landing;
         if (landingTarget == null)
         {
-            Debug.LogWarning($"{P} No se asignó landingTarget.");
             return;
         }
         StartLanding(landingTarget, landingRadius);
@@ -93,7 +94,7 @@ public class DroneLandingModule : MonoBehaviour
 
 
 
-    // ================= Lifecycle =================
+    // Gets the necesarry components and configures the rigidbody & trigger sphere
     void Awake()
     {
         cc = GetComponent<CharacterController>();
@@ -113,33 +114,13 @@ public class DroneLandingModule : MonoBehaviour
         lastScale = transform.lossyScale;
     }
 
-    void OnEnable()
-    {
-        if (debug)
-        {
-            Debug.Log($"{P}ENABLED\n" +
-                      $"  groundMask={MaskToString(groundMask)}\n" +
-                      $"  obstacleMask={MaskToString(obstacleMask)}\n" +
-                      $"  worldRadius={obstacleDetectionRadius:F2}m");
-            if (groundMask.value == ~0) Debug.LogWarning($"{P}groundMask=Everything (fix to Ground only).");
-            if (groundMask.value == 0) Debug.LogWarning($"{P}groundMask=None (set to Ground).");
-        }
-    }
-
-    void Reset()
-    {
-        if (!GetComponent<CharacterController>()) gameObject.AddComponent<CharacterController>();
-        if (!GetComponent<SphereCollider>()) gameObject.AddComponent<SphereCollider>();
-        if (!GetComponent<Rigidbody>()) gameObject.AddComponent<Rigidbody>();
-        Awake();
-    }
-
     void OnValidate()
     {
         if (!sphere) sphere = GetComponent<SphereCollider>();
         ConfigureTriggerSphere();
     }
 
+    // Configures the trigger sphere used for obstacle detection
     void ConfigureTriggerSphere()
     {
         if (!sphere) return;
@@ -150,7 +131,7 @@ public class DroneLandingModule : MonoBehaviour
         sphere.radius = Mathf.Max(0.01f, obstacleDetectionRadius / maxAxis); // world→local
     }
 
-    // ================= Public API =================
+    // Starts the landing according to states, it makes sure there is space available for landing 
     public void StartLanding(Transform t, float radiusMeters)
     {
         if (!t) { Abort("No target."); return; }
@@ -168,7 +149,6 @@ public class DroneLandingModule : MonoBehaviour
             return;
         }
 
-        // seed bearing angle
         Vector3 tpos = target.position;
         spotAngleRad = Mathf.Atan2(landingSpot.z - tpos.z, landingSpot.x - tpos.x);
         lastRetargetT = Time.time;
@@ -176,12 +156,13 @@ public class DroneLandingModule : MonoBehaviour
         lastY = transform.position.y;
         lastProgressT = Time.time;
         State = LandingState.Approaching;
+
         if (debug) Debug.Log($"{P}Start → spot {landingSpot:F3}  ringR={landingRadius:F2}");
     }
 
     public void CancelLanding(string reason = "Canceled") => Abort(reason);
 
-    // ================= Update =================
+    // Starts the landing depending on the state
     void Update()
     {
         if (transform.lossyScale != lastScale)
@@ -198,10 +179,11 @@ public class DroneLandingModule : MonoBehaviour
         else if (State == LandingState.Descending) TickDescend();
     }
 
-    // ================= Trigger-based avoidance =================
+    // Trigger-based avoidance
     void OnTriggerEnter(Collider other) => TriggerEvent(other, "Enter");
     void OnTriggerStay(Collider other) => TriggerEvent(other, "Stay");
 
+    // Detects collision and retargets the landing position in case it is needed
     void TriggerEvent(Collider other, string phase)
     {
         if (State != LandingState.Approaching && State != LandingState.Descending) return;
@@ -215,7 +197,6 @@ public class DroneLandingModule : MonoBehaviour
 
         if (TryPickLandingSpot(out landingSpot))
         {
-            // keep the same relative bearing if possible
             Vector3 tpos = target.position;
             spotAngleRad = Mathf.Atan2(landingSpot.z - tpos.z, landingSpot.x - tpos.x);
             State = LandingState.Approaching;
@@ -224,13 +205,14 @@ public class DroneLandingModule : MonoBehaviour
         else Abort($"Replan failed after {phase}:{other.name}");
     }
 
+    //  Detects collision and retargets the landing position in case it is needed
     bool IsObstacle(Collider c, out string why)
     {
         why = "";
         if (!c) { why = "null"; return false; }
         var tr = c.transform;
 
-        // ignore self & target
+        // ignore self and target
         if (tr.root == transform.root || tr.IsChildOf(transform)) { why = "self"; return false; }
         if (target && (tr == target || tr.IsChildOf(target))) { why = "target"; return false; }
 
@@ -248,7 +230,7 @@ public class DroneLandingModule : MonoBehaviour
         return true;
     }
 
-    // ================= Dynamic follow =================
+    // Following the person moving while landing
     void MaybeRetargetToMovingTarget()
     {
         if (Time.time - lastRetargetT < retargetInterval) return;
@@ -256,7 +238,6 @@ public class DroneLandingModule : MonoBehaviour
 
         Vector3 tpos = target.position;
 
-        // keep same bearing; recompute desired XZ on ring
         Vector3 candXZ = new Vector3(
             tpos.x + Mathf.Cos(spotAngleRad) * landingRadius,
             tpos.y + 5f,
@@ -281,7 +262,6 @@ public class DroneLandingModule : MonoBehaviour
             }
         }
 
-        // If bearing is invalid (blocked), try a quick local search around current angle
         float bestAngle = spotAngleRad;
         bool found = false;
         const int localTries = 8;
@@ -316,7 +296,7 @@ public class DroneLandingModule : MonoBehaviour
         }
     }
 
-    // ================= Approach =================
+    // Makes the dron agent descend to the landing spot once it is close enough
     void TickApproach()
     {
         Vector3 pos = transform.position;
@@ -359,7 +339,7 @@ public class DroneLandingModule : MonoBehaviour
         cc.Move(dir * (approachSpeed * Time.deltaTime));
     }
 
-    // ================= Descent =================
+    // Makes the dron agent descend to the landing spot once it is close enough
     void TickDescend()
     {
         Vector3 pos = transform.position;
@@ -367,14 +347,12 @@ public class DroneLandingModule : MonoBehaviour
         float groundY = SampleGroundY(new Vector3(landingSpot.x, pos.y, landingSpot.z), out _, out _);
         float targetY = groundY + stopHeightAboveGround;
 
-        // lock final spot near ground
         if (!spotLocked && Mathf.Abs(pos.y - targetY) <= lockWhenBelowHeight)
         {
             spotLocked = true;
             if (debug) Debug.Log($"{P}Spot LOCKED near ground @ {landingSpot:F3}");
         }
 
-        // gentle horizontal correction
         Vector3 horiz = new Vector3(landingSpot.x - pos.x, 0f, landingSpot.z - pos.z);
         float hMag = horiz.magnitude;
         horiz = (hMag > arriveThreshold * 0.5f)
@@ -386,8 +364,6 @@ public class DroneLandingModule : MonoBehaviour
         if (extraGravity > 0f) vy -= extraGravity * Time.deltaTime;
 
         cc.Move(new Vector3(horiz.x, vy, horiz.z) * Time.deltaTime);
-
-        // perch watchdog
         float yNow = transform.position.y;
         if (Mathf.Abs(yNow - lastY) > 0.005f) { lastY = yNow; lastProgressT = Time.time; }
         else if (Time.time - lastProgressT > 0.75f)
@@ -407,7 +383,7 @@ public class DroneLandingModule : MonoBehaviour
         }
     }
 
-    // ================= Replan / Pick spot =================
+    // It tries to get a landing spot within the 2 m area around the target, it also ensures that the dron does not collide
     bool TryPickLandingSpot(out Vector3 spot)
     {
         Vector3 tpos = target.position;
@@ -430,7 +406,6 @@ public class DroneLandingModule : MonoBehaviour
             }
         }
 
-        // Fallback along +X
         Vector3 fb = new Vector3(tpos.x + landingRadius, tpos.y + 5f, tpos.z);
         if (Physics.Raycast(fb, Vector3.down, out RaycastHit fh, 1000f, groundMask, QueryTriggerInteraction.Ignore))
         {
@@ -446,6 +421,7 @@ public class DroneLandingModule : MonoBehaviour
         return false;
     }
 
+    // Checks if there is any obstacle within the trigger sphere at the given hover point
     bool SpotHasObstacle(Vector3 hoverPoint)
     {
         int n = Physics.OverlapSphereNonAlloc(hoverPoint, obstacleDetectionRadius, overlapBuf, ~0, QueryTriggerInteraction.Ignore);
@@ -456,6 +432,7 @@ public class DroneLandingModule : MonoBehaviour
         return false;
     }
 
+    // It tries to get a landing spot within the 2 m area around the target, it also ensures that the dron does not collide
     void TryReplan(string why)
     {
         if (Time.time - lastReplanT < replanCooldown) return;
@@ -471,7 +448,7 @@ public class DroneLandingModule : MonoBehaviour
         else Abort($"Replan failed: {why}");
     }
 
-    // ================= Controller & Ground =================
+    // Preparates the controller for descent by changing the step offset and slope limit
     void PrepControllerForDescent()
     {
         origStepOffset = cc.stepOffset;
@@ -482,12 +459,14 @@ public class DroneLandingModule : MonoBehaviour
         lastProgressT = Time.time;
     }
 
+    // Restores the original controller parameters
     void RestoreController()
     {
         cc.stepOffset = origStepOffset;
         cc.slopeLimit = origSlopeLimit;
     }
 
+    // Samples the ground height at the given XZ position, ignoring self and target
     float SampleGroundY(Vector3 worldXZ, out string hitName, out int hitLayer)
     {
         hitName = "(none)"; hitLayer = -1;
@@ -518,7 +497,7 @@ public class DroneLandingModule : MonoBehaviour
         target = null;
     }
 
-    // ================= Debug helpers =================
+    // Debug helpers 
     void ThrottledLog(string msg)
     {
         if (!debugVerbose) return;
@@ -536,7 +515,7 @@ public class DroneLandingModule : MonoBehaviour
         return sb.ToString();
     }
 
-    // ================= Gizmos =================
+    // Creates a visual representacion of the colliders and of the landing spot in the editor
 #if UNITY_EDITOR
     public bool gizmos = true;
     void OnDrawGizmosSelected()

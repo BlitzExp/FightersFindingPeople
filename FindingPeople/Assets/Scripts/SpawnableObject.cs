@@ -1,6 +1,8 @@
 using UnityEngine;
 
 [System.Serializable]
+
+// Class to store parameters to spawn an object in the terrain (rocks and trees)
 public class SpawnableObject
 {
     public string name = "Object";

@@ -2,7 +2,7 @@
 - Project name: FindingPeople
 - Unity version: Unity 6000.0.44f1
 - Active game object:
-  - Name: Carla
-  - Tag: Person
-  - Layer: obstacleMask
+  - Name: Dron ValuesError
+  - Tag: Dron
+  - Layer: dron
 <!-- UNITY CODE ASSIST INSTRUCTIONS END -->
